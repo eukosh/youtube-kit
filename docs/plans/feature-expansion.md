@@ -1,6 +1,7 @@
 # Plan: feature expansion and guarded deletes
 
-Status: implemented. Reviewed by three Fable passes (CLI ergonomics, correctness, maintainability); the delete policy is recorded in ADR 0002.
+Status: implemented; kept as history. Some names and shapes changed while building it: ADR 0002 records the
+delete policy as built, and `skills/youtube/SKILL.md` the commands.
 
 Scope agreed with the owner (2026-10-16): analytics, comment management, the gap-fillers,
 channel branding, subscriptions and ratings. Out of scope: captions, localizations.
@@ -59,7 +60,7 @@ ytk analytics [--video V...] [--since D] [--until D] [--by DIM] [--metrics M...]
 
 ytk video get|categories|upload|update|thumbnail   (existing)
 ytk video delete VIDEO [--confirm ID]             guarded, damage-limited
-ytk video status VIDEO [--wait] [--timeout S]     processingDetails; timeout = error type `timeout`, exit 1
+ytk video status VIDEO [--wait] [--timeout S]     processingDetails; timeout = error type `timeout`, exit 10
 ytk video rate VIDEO like|dislike|none
 ytk video rating VIDEO...
 

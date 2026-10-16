@@ -129,7 +129,7 @@ def update_playlist(
     return _playlist(youtube.playlists().update(part=",".join(parts), body=body).execute())
 
 
-@operation(quota=51, destructive=True, idempotent=True, oauth=True)
+@operation(quota=52, destructive=True, idempotent=True, oauth=True)  # lookup + ownership check + delete
 def delete_playlist(playlist: str, *, confirm: str | None = None) -> Deleted:
     """Permanently delete one of your playlists. The videos in it are not affected.
 

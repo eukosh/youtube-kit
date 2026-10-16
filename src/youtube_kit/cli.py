@@ -5,7 +5,8 @@ Contract (relied on by agents and scripts, documented in skills/youtube/SKILL.md
 - Failures print {"error": {"type", "message", "details"?}} to stderr and exit
   with the error's code: 2 invalid input, 3 not found, 4 not authorized, 5 quota
   exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected,
-  10 timeout, 1 anything else. Usage errors from argument parsing also exit 2.
+  10 timeout, 1 anything else (type "error"). Usage errors from argument parsing exit 2 with type
+  "usage" (as formatted text when stderr is a terminal).
 - Guarded deletes ask a human at a terminal instead of exiting 8; declining exits 1.
   For agents, the exit-8 details include `rerun`, the exact command that confirms.
 """
@@ -98,6 +99,7 @@ subscription.command(subscriptions.unsubscribe, name="remove")
 
 
 @auth_app.command(name="login")
+# negative_bool=None brings back --no-browser, which the app-wide default turns off.
 def auth_login(*, browser: Annotated[bool, cyclopts.Parameter(negative_bool=None)] = True) -> AuthStatus:
     """Authorize your YouTube account through Google's OAuth consent screen.
 
@@ -135,11 +137,14 @@ def serve_mcp() -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    human = sys.stderr.isatty()
     try:
         with _terminal_progress():
-            result = app(argv, exit_on_error=False, result_action="return_value")
-    except CycloptsError:
-        return 2  # cyclopts has already printed the error
+            result = app(argv, exit_on_error=False, print_error=human, result_action="return_value")
+    except CycloptsError as e:
+        if not human:  # a person got cyclopts' formatted message already
+            print(json.dumps({"error": {"type": "usage", "message": str(e)}}, ensure_ascii=False), file=sys.stderr)
+        return 2
     except core.ConfirmationRequired as e:
         confirmed = _with_confirm(argv, e.details["confirm"])
         if not (sys.stdin.isatty() and sys.stderr.isatty()):
@@ -152,9 +157,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         return main(confirmed)
     except core.YouTubeError as e:
         return _fail(e)
+    except KeyboardInterrupt:
+        return 130
+    except Exception as e:  # noqa: BLE001  -- keep the JSON contract even for bugs and odd responses
+        return _fail(core.YouTubeError(f"{type(e).__name__}: {e}"))
     if result is not None:
         indent = 2 if sys.stdout.isatty() else None
-        print(pydantic_core.to_json(result, indent=indent, exclude_none=True).decode())
+        try:
+            print(pydantic_core.to_json(result, indent=indent, exclude_none=True).decode())
+        except BrokenPipeError:  # e.g. piped into head
+            sys.stdout = None  # stop the interpreter's final flush from raising again
     return 0
 
 
@@ -175,7 +187,7 @@ def _approved(plan: dict) -> bool:
     print(f"About to permanently delete {plan['kind']} {plan['confirm']}:", file=sys.stderr)
     for key, value in plan.items():
         if key not in {"kind", "confirm"}:
-            print(f"  {key}: {value}", file=sys.stderr)
+            print(f"  {key}: {str(value).replace(chr(10), chr(10) + '    ')}", file=sys.stderr)
     print("Delete it? [y/N] ", end="", file=sys.stderr, flush=True)
     return sys.stdin.readline().strip().lower() in {"y", "yes"}
 

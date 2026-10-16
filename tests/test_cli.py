@@ -60,6 +60,7 @@ def test_empty_tags_flag_clears_tags(capsys, api):
         (http_error(403, "quotaExceeded"), 5, "quota_exceeded"),
         (http_error(403, "forbidden"), 6, "forbidden"),
         (http_error(500, "backendError"), 1, "error"),
+        (KeyError("snippet"), 1, "error"),  # unexpected response shape: still JSON, no traceback
         (http_error(400, "invalidParameter"), 2, "invalid_request"),
         (httplib2.ServerNotFoundError("dns"), 7, "network"),
     ],
@@ -92,7 +93,7 @@ def test_invalid_input_exits_2(capsys, api):
 def test_usage_errors_exit_2_and_explain_on_stderr(capsys, api, argv):
     code, out, err = run(capsys, *argv)
     assert (code, out) == (2, "")
-    assert err.strip()
+    assert json.loads(err)["error"]["type"] == "usage"
 
 
 def test_upload_takes_the_file_positionally(capsys, api, tmp_path):
@@ -123,7 +124,7 @@ def test_auth_status_needs_no_network(capsys):
     assert json.loads(out)["token_present"] is False
 
 
-def test_channel_mine_uses_oauth(capsys, api):
+def test_channel_get_defaults_to_mine(capsys, api):
     api.oauth.channels().list().execute.return_value = {"items": [channel_item()]}
     code, out, _ = run(capsys, "channel", "get")
     assert code == 0

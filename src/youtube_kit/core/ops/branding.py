@@ -105,6 +105,7 @@ def set_watermark(
         duration: Seconds to show it. Until the end of the video when omitted.
     """
     media = image_upload(image, max_mb=1)
+    # uint64 fields travel as strings in the JSON API.
     timing: dict[str, Any] = {"type": "offsetFromEnd" if from_end else "offsetFromStart", "offsetMs": str(start * 1000)}
     if duration is not None:
         timing["durationMs"] = str(duration * 1000)
@@ -226,8 +227,8 @@ def _update_branding(settings_changes: dict, *, banner_url: str | None = None) -
     return _branding(response.execute())
 
 
-# YouTube stores keywords as one space-separated string, quoting multi-word keywords.
 def _join_keywords(keywords: list[str]) -> str:
+    """YouTube stores keywords as one space-separated string, quoting multi-word keywords."""
     cleaned = [k.strip() for k in keywords if k.strip()]
     return " ".join(f'"{k}"' if " " in k else k for k in cleaned)
 

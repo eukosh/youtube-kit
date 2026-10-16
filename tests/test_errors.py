@@ -18,6 +18,7 @@ from .fakes import http_error
         (403, "commentsDisabled", errors.Forbidden),
         (404, "videoNotFound", errors.NotFound),
         (400, "invalidParameter", errors.InvalidRequest),
+        (429, "rateLimitExceeded", errors.QuotaExceeded),
         (500, "backendError", errors.YouTubeError),
     ],
 )

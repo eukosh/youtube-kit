@@ -35,7 +35,7 @@ class OperationInfo:
     """Quota units per API request. Paginated operations make one request per page of 50."""
     read_only: bool
     destructive: bool
-    """Overwrites existing data (as opposed to only adding new data)."""
+    """Overwrites or deletes existing data (as opposed to only adding new data)."""
     idempotent: bool
     oauth: bool
     """Acts as the authorized user rather than reading public data."""

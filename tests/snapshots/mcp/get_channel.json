@@ -20,7 +20,7 @@
           }
         ],
         "default": null,
-        "description": "UC… channel ID, @handle (the @ is optional), or channel URL. Omit for your own channel."
+        "description": "UC… channel ID, @handle, or channel URL. Omit for your own channel."
       }
     },
     "type": "object"

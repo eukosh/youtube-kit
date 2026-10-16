@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Permanently delete one of your playlists. The videos in it are not affected.\n\nWithout confirm, nothing is deleted and the error describes the playlist.\n\nQuota: 51 units.",
+  "description": "Permanently delete one of your playlists. The videos in it are not affected.\n\nWithout confirm, nothing is deleted and the error describes the playlist.\n\nQuota: 52 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {

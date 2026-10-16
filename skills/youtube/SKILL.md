@@ -1,6 +1,6 @@
 ---
 name: youtube
-description: YouTube through the `ytk` CLI. Use for any task that reads YouTube data (search, videos, channels, playlists, comments, activity) or changes the user's own channel (upload, edit, delete, thumbnails, playlists, comments and moderation).
+description: YouTube through the `ytk` CLI. Use for any task that reads YouTube data (search, videos, channels, playlists, comments, activity) or changes the user's own channel (upload, edit, delete, thumbnails, playlists, comments and moderation, branding, subscriptions, ratings), or reports its analytics.
 ---
 
 # YouTube via `ytk`
@@ -47,7 +47,8 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 
 | exit | type | what to do |
 |---|---|---|
-| 2 | `invalid_request` / usage | fix the arguments (message says which) |
+| 1 | `error` | unexpected failure, or the user declined a delete; report the message |
+| 2 | `invalid_request` / `usage` | fix the arguments (message says which) |
 | 3 | `not_found` | the ID or handle doesn't exist or isn't visible |
 | 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser) or set `YOUTUBE_API_KEY`; also when an older login lacks analytics access |
 | 5 | `quota_exceeded` | stop; quota resets at midnight Pacific Time |
@@ -59,7 +60,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 
 ## Deletes
 
-`video delete`, `playlist delete` and `comment delete` never delete on the first call: they exit 8 with what would be deleted. Never add `--confirm` on your own initiative; it exists so the user's approval names the exact target. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`, see README).
+`video delete`, `playlist delete` and `comment delete` never delete on the first call: they exit 8 with what would be deleted. Never add `--confirm` on your own initiative; it exists so the user's approval names the exact target. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`, see README). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 
 To make Claude Code ask before every delete, add to `.claude/settings.json`:
 
@@ -69,7 +70,7 @@ To make Claude Code ask before every delete, add to `.claude/settings.json`:
 
 ## Quota
 
-The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` 1600 (each command's `--help` states its cost). Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
+The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` 1600 (each command's `--help` states its cost). Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` uses the separate Analytics API quota. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
 
 ## Recipes
 

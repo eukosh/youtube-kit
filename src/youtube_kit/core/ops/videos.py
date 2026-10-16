@@ -221,7 +221,7 @@ def set_thumbnail(video: str, image: Path) -> ThumbnailResult:
     return ThumbnailResult(video_id=video_id, thumbnail_url=best.get("url"))
 
 
-@operation(quota=51, destructive=True, idempotent=True, oauth=True)
+@operation(quota=52, destructive=True, idempotent=True, oauth=True)  # lookup + ownership check + delete
 def delete_video(video: str, *, confirm: str | None = None) -> Deleted:
     """Permanently delete one of your videos.
 
@@ -242,7 +242,12 @@ def delete_video(video: str, *, confirm: str | None = None) -> Deleted:
     if target.channel_id != my_channel_id():
         raise Forbidden(f"Video {video_id} belongs to another channel.")
     guard.check_protected(target)
-    plan = {"title": target.title, "url": target.url, "privacy": target.privacy, "views": target.stats.views}
+    plan = {
+        "title": target.title,
+        "url": target.url,
+        "privacy": target.privacy,
+        "views": target.stats.views if target.stats else None,
+    }
     guard.require_confirm("video", video_id, confirm, plan)
     deleted = delete_if_present(youtube.videos().delete(id=video_id))
     return Deleted(kind="video", id=video_id, already_gone=not deleted)

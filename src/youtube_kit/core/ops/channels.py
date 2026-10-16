@@ -16,7 +16,7 @@ def get_channel(channel: str | None = None) -> Channel:
     """Channel metadata, statistics, and uploads playlist ID.
 
     Args:
-        channel: UC… channel ID, @handle (the @ is optional), or channel URL. Omit for your own channel.
+        channel: UC… channel ID, @handle, or channel URL. Omit for your own channel.
     """
     if channel is None:
         return _fetch(client.oauth(), "The authorized Google account has no YouTube channel.", mine=True)

@@ -100,6 +100,14 @@ def test_tokens_without_a_scope_list_are_tried():
     assert auth.load_credentials(settings, auth.ANALYTICS).token == "access"
 
 
+@pytest.mark.parametrize("content", ["{not json", '{"token": "access"}'])
+def test_load_credentials_rejects_a_broken_token(content):
+    settings = Settings.from_env()
+    settings.token_file.write_text(content)
+    with pytest.raises(NotAuthorized, match="ytk auth login"):
+        auth.load_credentials(settings)
+
+
 def test_status_survives_a_corrupt_token():
     settings = Settings.from_env()
     settings.token_file.write_text("{not json")

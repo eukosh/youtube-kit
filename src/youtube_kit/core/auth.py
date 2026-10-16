@@ -24,14 +24,20 @@ def load_credentials(settings: Settings, scope: str = YOUTUBE) -> Credentials:
     """Stored OAuth credentials, refreshed and re-saved if expired. They must include `scope`."""
     if not settings.token_file.exists():
         raise NotAuthorized(f"No OAuth token at {settings.token_file}. {LOGIN_HINT}")
-    info = json.loads(settings.token_file.read_text())
+    try:
+        info = json.loads(settings.token_file.read_text())
+    except ValueError as e:
+        raise NotAuthorized(f"OAuth token at {settings.token_file} is unreadable ({e}). {LOGIN_HINT}") from e
     # The token lists the scopes Google granted; the user may have unticked some, or logged in before
     # a scope was added. A refresh can't add scopes; the only fix is logging in again. Tokens from
     # elsewhere may not list scopes at all; Google then answers for itself.
     if "scopes" in info and scope not in info["scopes"]:
         access = "analytics" if scope == ANALYTICS else "YouTube"
         raise NotAuthorized(f"Your login doesn't grant {access} access. {LOGIN_HINT} Allow every requested permission.")
-    creds = Credentials.from_authorized_user_info(info)
+    try:
+        creds = Credentials.from_authorized_user_info(info)
+    except ValueError as e:
+        raise NotAuthorized(f"OAuth token at {settings.token_file} is incomplete ({e}). {LOGIN_HINT}") from e
     if creds.valid:
         return creds
     if not creds.refresh_token:

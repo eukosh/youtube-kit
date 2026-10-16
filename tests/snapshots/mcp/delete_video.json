@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Permanently delete one of your videos.\n\nOnly recent, little-watched videos can be deleted here: by default at most 100 views and, if public,\nuploaded within the last 7 days (the limits are set in the toolkit's config file). Anything else must be\ndeleted in YouTube Studio. Without confirm, nothing is deleted and the error describes the video.\n\nQuota: 51 units.",
+  "description": "Permanently delete one of your videos.\n\nOnly recent, little-watched videos can be deleted here: by default at most 100 views and, if public,\nuploaded within the last 7 days (the limits are set in the toolkit's config file). Anything else must be\ndeleted in YouTube Studio. Without confirm, nothing is deleted and the error describes the video.\n\nQuota: 52 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {

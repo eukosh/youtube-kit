@@ -35,7 +35,7 @@ def subscribe(channel: str) -> Subscription:
     """Subscribe the authorized user to a channel. Already being subscribed is fine.
 
     Args:
-        channel: UC… channel ID, @handle, or channel URL. A handle or URL costs 1 more quota unit.
+        channel: UC… channel ID, @handle, or channel URL.
     """
     channel_id = resolve_channel_id(channel)
     existing = _find(channel_id)
@@ -50,7 +50,7 @@ def unsubscribe(channel: str) -> Unsubscribed:
     """Unsubscribe the authorized user from a channel. Not being subscribed is fine.
 
     Args:
-        channel: UC… channel ID, @handle, or channel URL. A handle or URL costs 1 more quota unit.
+        channel: UC… channel ID, @handle, or channel URL.
     """
     channel_id = resolve_channel_id(channel)
     existing = _find(channel_id)

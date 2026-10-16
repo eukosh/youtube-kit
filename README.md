@@ -31,7 +31,7 @@ Credentials live in the user config directory (`~/Library/Application Support/yo
 
 Commands are `ytk <noun> <verb>` (`video`, `playlist`, `comment`, `channel`, `subscription`, `auth`), plus `ytk search`, `ytk analytics` and `ytk mcp`. `ytk --help` lists them, and [the skill](skills/youtube/SKILL.md) has the full map.
 
-Every command prints one JSON document on stdout. On failure stdout stays empty, stderr gets `{"error": {"type", "message", "details"?}}`, and the exit code tells you what went wrong: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout. Video, channel and playlist arguments accept IDs or pasted URLs; channels also take `@handle`.
+Every command prints one JSON document on stdout. On failure stdout stays empty, stderr gets `{"error": {"type", "message", "details"?}}`, and the exit code tells you what went wrong (2 bad input, 3 not found, 4 not authorized, …; the full table is in [the skill](skills/youtube/SKILL.md#output-contract)). Video, channel and playlist arguments accept IDs or pasted URLs; channels also take `@handle`.
 
 To let Claude Code use it, link the skill:
 

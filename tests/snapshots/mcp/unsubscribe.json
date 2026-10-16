@@ -11,7 +11,7 @@
     "additionalProperties": false,
     "properties": {
       "channel": {
-        "description": "UC… channel ID, @handle, or channel URL. A handle or URL costs 1 more quota unit.",
+        "description": "UC… channel ID, @handle, or channel URL.",
         "type": "string"
       }
     },
