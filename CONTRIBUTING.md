@@ -42,7 +42,12 @@ uv run ruff check --fix . && uv run ruff format .  # lint and format
 
 ## Releasing (maintainers)
 
-1. `uv version --bump minor` (or `patch`), and move the `Unreleased` notes in the
-   changelog under the new version.
-2. Commit, then tag and push: `git tag v$(uv version --short) && git push --tags`.
-3. The release workflow tests, builds, publishes to PyPI and creates the GitHub release.
+One-time setup: create a GitHub environment named `pypi`, and add the repository as a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI (workflow
+`release.yml`, environment `pypi`).
+
+1. `uv version --bump minor` (or `patch`). In CHANGELOG.md, move the `Unreleased` notes
+   under the new version with today's date, and update the compare links at the bottom.
+2. Commit and push to `main`, then tag: `git tag v$(uv version --short) && git push origin --tags`.
+3. The release workflow checks the tag against the version and the changelog, runs the
+   tests, builds, publishes to PyPI and creates the GitHub release from the changelog notes.

@@ -7,9 +7,9 @@ command names, flags and JSON fields.
 
 ## [Unreleased]
 
-## [0.2.0]
+## [0.2.0] - 2026-10-16
 
-First public release.
+First public release. (0.1.0 was an unpublished, MCP-only predecessor.)
 
 ### Added
 

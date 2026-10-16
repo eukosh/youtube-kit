@@ -60,7 +60,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 
 ## Deletes
 
-`video delete`, `playlist delete` and `comment delete` never delete on the first call: they exit 8 with what would be deleted. Never add `--confirm` on your own initiative; it exists so the user's approval names the exact target. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`, see README). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
+`video delete`, `playlist delete` and `comment delete` never delete on the first call: they exit 8 with what would be deleted. Never add `--confirm` on your own initiative; it exists so the user's approval names the exact target. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 
 To make Claude Code ask before every delete, add to `.claude/settings.json`:
 

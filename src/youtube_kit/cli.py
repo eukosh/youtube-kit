@@ -31,7 +31,7 @@ from .core.ops import analytics, branding, channels, comments, playlists, search
 
 app = cyclopts.App(
     name="ytk",
-    help="YouTube Data API from the command line. Prints JSON; see `ytk <command> --help`.",
+    help="YouTube Data and Analytics APIs from the command line. Prints JSON; see `ytk <command> --help`.",
     version=version("youtube-kit"),
     # No --no-X / --empty-X flags, except on update commands where "unset" and "clear" mean something.
     default_parameter=cyclopts.Parameter(negative_bool=(), negative_iterable=()),

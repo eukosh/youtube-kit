@@ -22,7 +22,7 @@ Reversible or cheap-to-redo changes stay unguarded: removing a playlist item, un
 
 ## Alternatives rejected
 
-- **A "hide" command (set the video private) instead of deleting.** The owner rejected it.
+- **A "hide" command (set the video private) instead of deleting.** Hiding is a different operation, not a safer delete, and updating a video's privacy already does it.
 - **MCP elicitation for the confirmation, with `confirm` hidden from the schema.** FastMCP 4.1 refuses server-initiated elicitation on 2026-07-28 protocol connections, so modern clients could never delete.
 - **`--yes`.** Agents learn to append it by reflex. `--confirm <id>` can't be carried over to a different target.
 - **A decorator flag (`@operation(guarded=True)`).** Each delete has to fetch its own target anyway. Two plain helper calls (`guard.check_protected`, `guard.require_confirm`) are shorter and easier to read.

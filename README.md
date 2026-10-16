@@ -13,7 +13,7 @@ ytk analytics --by video --since 90d --limit 5     # your top videos of the last
 ytk comment list --status held                     # comments waiting for review on your channel
 ```
 
-- **Built for agents, pleasant for people.** One JSON document on stdout, structured errors on stderr, a distinct exit code per failure. Coding agents with a shell use it through a short [skill](#use-it-from-an-agent) that costs no context until called.
+- **Built for agents, pleasant for people.** One JSON document on stdout, structured errors on stderr, a distinct exit code per failure. Coding agents with a shell use it through a short [skill](#use-it-from-an-agent) that they load only when a YouTube task comes up.
 - **One core, two surfaces.** Every operation is a typed function. The CLI and the MCP server are thin adapters over it, and a test fails if either one misses an operation.
 - **Safe deletes.** Deleting needs a confirmation that names the exact target, and popular or long-public videos can't be deleted at all. [Details below.](#deleting)
 - **Quota-aware.** Each command's `--help` (and each MCP tool description) states its quota cost.
@@ -55,7 +55,7 @@ Public data (search, videos, channels, playlists, comments) works with an API ke
 > [!NOTE]
 > While the consent screen is in *Testing* status, Google expires the login after 7 days and you need to run `ytk auth login` again. To keep it, set the publishing status to *In production*. Google then shows an "unverified app" warning at login, which is expected for your own client; continue past it.
 
-Credentials live in the user config directory (`~/Library/Application Support/youtube-kit/` on macOS, `~/.config/youtube-kit/` on Linux). These environment variables override the defaults:
+Credentials and `config.toml` live in the user config directory (`~/Library/Application Support/youtube-kit/` on macOS, `~/.config/youtube-kit/` on Linux); `ytk auth status` prints the exact paths. These environment variables override them:
 
 | Variable | Purpose |
 |---|---|
@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/eukosh/youtube-kit/main/skills/yout
   -o ~/.claude/skills/youtube/SKILL.md
 ```
 
-**MCP clients** run the server with `ytk mcp`. For Claude Code:
+**MCP clients** run the server with `ytk mcp`. The examples below use `uvx`, which comes with [uv](https://docs.astral.sh/uv/). For Claude Code:
 
 ```sh
 claude mcp add youtube -- uvx --from youtube-kit ytk mcp
@@ -94,6 +94,8 @@ For clients configured with JSON (Claude Desktop, Cursor and others):
 }
 ```
 
+The API key is optional; without it the server uses your `ytk auth login` token.
+
 ## Output and exit codes
 
 Every command prints one JSON document on stdout, with null fields left out. On failure stdout stays empty and stderr gets:
@@ -111,7 +113,7 @@ Video, channel and playlist arguments take IDs or pasted URLs; channels also tak
 Agents make mistakes, so deleting videos, playlists and comments is guarded:
 
 - **Two steps.** The first call deletes nothing. At a terminal you get a `[y/N]` prompt. An agent gets exit 8 with a description of the target and must run the command again with `--confirm <id>`, so the approval always names the exact thing being deleted.
-- **Damage limit.** A video with more than 100 views, or one that is public and was uploaded more than 7 days ago, can't be deleted here at all; use YouTube Studio. The limits live in `config.toml` in the config directory:
+- **Damage limit.** A video with more than 100 views, or one that is public and was uploaded more than 7 days ago, can't be deleted here at all; use YouTube Studio. The limits live in `config.toml` (`ytk auth status` shows where):
 
   ```toml
   [delete_protection]
@@ -125,11 +127,11 @@ This stops mistakes, not a determined agent: anything holding your OAuth token c
 
 ## Quota
 
-Google gives each Cloud project 10,000 units a day, resetting at midnight Pacific time. Reads cost 1 unit per request, `search` 100 per page of 50 results, most writes 50, and an upload 1,600. Analytics has its own separate quota.
+Google gives each Cloud project 10,000 units a day, resetting at midnight Pacific time. Reads cost 1 unit per request, `search` 100 per page of 50 results, most writes 50 (deletes a couple more, for the lookup and ownership check), and an upload 1,600. Analytics has its own separate quota.
 
 ## Contributing
 
-Bug reports and pull requests are welcome. See [CONTRIBUTING.md](https://github.com/eukosh/youtube-kit/blob/main/CONTRIBUTING.md) for the development setup and [ADR 0001](https://github.com/eukosh/youtube-kit/blob/main/docs/adr/0001-shared-core-cli-and-mcp.md) for how the code fits together. Report security issues privately, as described in [SECURITY.md](https://github.com/eukosh/youtube-kit/blob/main/SECURITY.md).
+Bug reports and pull requests are welcome. See [CONTRIBUTING.md](https://github.com/eukosh/youtube-kit/blob/main/CONTRIBUTING.md) for the development setup, [CHANGELOG.md](https://github.com/eukosh/youtube-kit/blob/main/CHANGELOG.md) for what changed, and [ADR 0001](https://github.com/eukosh/youtube-kit/blob/main/docs/adr/0001-shared-core-cli-and-mcp.md) for how the code fits together. Report security issues privately, as described in [SECURITY.md](https://github.com/eukosh/youtube-kit/blob/main/SECURITY.md).
 
 ## License
 

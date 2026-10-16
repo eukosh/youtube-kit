@@ -177,6 +177,7 @@ class AuthStatus(BaseModel):
     granted_scopes: list[str] | None = None
     client_secrets_file: str
     client_secrets_present: bool
+    config_file: str
 
 
 class VideoRating(BaseModel):

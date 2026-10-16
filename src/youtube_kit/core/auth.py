@@ -86,6 +86,7 @@ def status(settings: Settings) -> AuthStatus:
         granted_scopes=granted_scopes,
         client_secrets_file=str(settings.client_secrets_file),
         client_secrets_present=settings.client_secrets_file.exists(),
+        config_file=str(settings.config_file),
     )
 
 
