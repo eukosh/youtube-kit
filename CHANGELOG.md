@@ -1,13 +1,11 @@
 # Changelog
 
-All notable changes to this project are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
-[Semantic Versioning](https://semver.org/). Until 1.0, minor versions may change
-command names, flags and JSON fields.
+Notable changes in each release. Entries come from the
+[Conventional Commits](https://www.conventionalcommits.org/) titles of merged pull requests.
+The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
+change command names, flags and JSON fields.
 
-## [Unreleased]
-
-## [0.2.0] - 2026-10-16
+## [0.2.0](https://github.com/eukosh/youtube-kit/releases/tag/v0.2.0) (2026-10-16)
 
 First public release. (0.1.0 was an unpublished, MCP-only predecessor.)
 
@@ -25,6 +23,3 @@ First public release. (0.1.0 was an unpublished, MCP-only predecessor.)
 - Guarded deletes for videos, playlists and comments: target-bound confirmation,
   configurable damage limits for videos, ownership checks, idempotency.
 - JSON output on stdout, structured errors on stderr and distinct exit codes.
-
-[Unreleased]: https://github.com/eukosh/youtube-kit/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/eukosh/youtube-kit/releases/tag/v0.2.0

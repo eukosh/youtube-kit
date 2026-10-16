@@ -38,16 +38,45 @@ uv run ruff check --fix . && uv run ruff format .  # lint and format
   and include the diff in your pull request.
 - Irreversible deletes must go through `core/guard.py`; see
   [ADR 0002](docs/adr/0002-guarded-deletes.md).
-- Note user-facing changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md).
+## Pull request titles
+
+Pull requests are squash-merged, and the title becomes both the commit message and the
+changelog line. Titles follow [Conventional Commits](https://www.conventionalcommits.org/),
+and a check enforces it:
+
+| Type | Use for | In the changelog |
+|---|---|---|
+| `feat` | something users can now do | Added |
+| `fix` | a bug users could hit | Fixed |
+| `perf`, `revert` | other behavior changes | Changed |
+| `docs`, `refactor`, `test`, `build`, `ci`, `chore` | everything else | hidden |
+
+Write the title for users: `feat: list comments held for review`, not
+`feat: add moderationStatus param`. Mark a breaking change with `!` (`feat!: rename
+--since to --from`) and explain the migration in the description.
+
+To correct the changelog entry of a pull request that is already merged, edit its
+description and add the text to use instead:
+
+```
+BEGIN_COMMIT_OVERRIDE
+fix: report a clear error when the token file is corrupt
+END_COMMIT_OVERRIDE
+```
 
 ## Releasing (maintainers)
 
-One-time setup: create a GitHub environment named `pypi`, and add the repository as a
-[trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI (workflow
-`release.yml`, environment `pypi`).
+[Release Please](https://github.com/googleapis/release-please) keeps a release pull
+request open that bumps the version in `pyproject.toml` and `uv.lock` and adds the
+changelog entry. Merging it tags the release, creates the GitHub release, and publishes
+to PyPI.
 
-1. `uv version --bump minor` (or `patch`). In CHANGELOG.md, move the `Unreleased` notes
-   under the new version with today's date, and update the compare links at the bottom.
-2. Commit and push to `main`, then tag: `git tag v$(uv version --short) && git push origin --tags`.
-3. The release workflow checks the tag against the version and the changelog, runs the
-   tests, builds, publishes to PyPI and creates the GitHub release from the changelog notes.
+One-time setup:
+
+- Create a GitHub environment named `pypi`, and add the repository as a
+  [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI (workflow
+  `release.yml`, environment `pypi`).
+- In Settings → Actions → General, allow GitHub Actions to create pull requests.
+
+If publishing fails, rerun the failed jobs, or run the Release workflow by hand with the
+release's tag.
