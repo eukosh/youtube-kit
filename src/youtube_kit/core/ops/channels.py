@@ -12,20 +12,16 @@ _LOOKUP_PARAM = {"id": "id", "handle": "forHandle", "username": "forUsername"}
 
 
 @operation(quota=1, read_only=True, idempotent=True)
-def get_channel(channel: str) -> Channel:
+def get_channel(channel: str | None = None) -> Channel:
     """Channel metadata, statistics, and uploads playlist ID.
 
     Args:
-        channel: UC… channel ID, @handle (the @ is optional), or channel URL.
+        channel: UC… channel ID, @handle (the @ is optional), or channel URL. Omit for your own channel.
     """
+    if channel is None:
+        return _fetch(client.oauth(), "The authorized Google account has no YouTube channel.", mine=True)
     ref = parse.channel_ref(channel)
     return _fetch(client.public(), f"Channel {ref.value} not found.", **{_LOOKUP_PARAM[ref.by]: ref.value})
-
-
-@operation(quota=1, read_only=True, idempotent=True, oauth=True)
-def get_my_channel() -> Channel:
-    """The authorized user's own channel, including its uploads playlist ID."""
-    return _fetch(client.oauth(), "The authorized Google account has no YouTube channel.", mine=True)
 
 
 @operation(quota=1, read_only=True, idempotent=True, paginated=True)

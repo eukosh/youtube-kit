@@ -1,0 +1,58 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Whether the authorized user liked or disliked each video.\n\nQuota: 1 unit.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "videos": {
+        "description": "Video IDs or URLs. Fetched in batches of 50, 1 quota unit per batch.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "videos"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "result": {
+        "items": {
+          "properties": {
+            "rating": {
+              "enum": [
+                "like",
+                "dislike",
+                "none"
+              ],
+              "type": "string"
+            },
+            "video_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "video_id",
+            "rating"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "result"
+    ],
+    "type": "object",
+    "x-fastmcp-wrap-result": true
+  }
+}

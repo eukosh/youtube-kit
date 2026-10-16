@@ -7,7 +7,7 @@ from ..errors import Forbidden, InvalidRequest, NotFound
 from ..models import Deleted, Page, Playlist, PlaylistEntry, PlaylistImage, PlaylistItem, PlaylistRemoval, Privacy
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
-from ._common import changes, delete_if_present, image_upload, one, pick, playlist_url, to_int, video_url
+from ._common import changes, delete_if_present, image_upload, one, pick, playlist_url, to_int, unique_ids, video_url
 from .channels import my_channel_id, owner_or
 
 _PARTS = "snippet,status,contentDetails"
@@ -43,9 +43,7 @@ def get_playlists(playlists: list[str]) -> list[Playlist]:
     Args:
         playlists: Playlist IDs or URLs with a list= parameter. Fetched in batches of 50, 1 quota unit per batch.
     """
-    ids = list(dict.fromkeys(parse.playlist_id(p) for p in playlists))
-    if not ids:
-        raise InvalidRequest("Pass at least one playlist ID or URL.")
+    ids = unique_ids(playlists, parse.playlist_id, "playlist ID or URL")
     found: list[Playlist] = []
     for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
         request = client.public().playlists().list(part=_PARTS, id=",".join(batch))

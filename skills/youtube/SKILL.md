@@ -14,6 +14,7 @@ ytk analytics [--since D] [--until D] [--by day|video|country|device|traffic-sou
 ytk video get VIDEO...             ytk video categories
 ytk video upload FILE --title T    ytk video status VIDEO [--wait]  ytk video update VIDEO
 ytk video thumbnail VIDEO IMAGE    ytk video delete VIDEO
+ytk video rate VIDEO like|dislike|none                              ytk video rating VIDEO...
 
 ytk playlist list [CHANNEL]        ytk playlist get PLAYLIST...     ytk playlist items PLAYLIST
 ytk playlist create TITLE          ytk playlist update PLAYLIST     ytk playlist thumbnail PLAYLIST IMAGE
@@ -25,13 +26,18 @@ ytk comment replies COMMENT        ytk comment post VIDEO TEXT      ytk comment 
 ytk comment edit COMMENT TEXT      ytk comment delete COMMENT
 ytk comment approve|hold COMMENT...                                 ytk comment reject COMMENT... [--ban-author]
 
-ytk channel get CHANNEL            ytk channel mine                 ytk channel activity [CHANNEL]
+ytk channel get [CHANNEL]          ytk channel activity [CHANNEL]
+ytk channel update [--description] [--keywords K]... [--country] [--language] [--trailer VIDEO]
+ytk channel banner IMAGE           ytk channel watermark set IMAGE  ytk channel watermark remove
+ytk channel section list [CHANNEL] | add KIND | update SECTION | delete SECTION
+
+ytk subscription list              ytk subscription add CHANNEL     ytk subscription remove CHANNEL
 ytk auth status | login | logout
 ```
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
 
-`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. Options are flags (`--limit 20`); list options repeat (`--tags a --tags b`; `--empty-tags` clears). A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
+`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. Options are flags (`--limit 20`); list options repeat (`--tags a --tags b`; `--empty-tags` clears). In usage lines, `[ARGS]` is the optional positional named in the parameter table. A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
 
 ## Output contract
 
@@ -86,4 +92,4 @@ id=$(ytk video upload clip.mp4 --title "Launch" --publish-at 2026-07-01T15:00:00
 ytk playlist add PLxxxx "$id"
 ```
 
-Commands that change things (`video upload/update/thumbnail/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`) act on the user's real channel: confirm with the user before running them.
+Commands that change things (`video upload/update/thumbnail/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`, `channel update/banner`, `channel watermark set/remove`, `channel section add/update/delete`, `subscription add/remove`, `video rate`) act on the user's real account: confirm with the user before running them.

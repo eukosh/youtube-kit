@@ -1,0 +1,128 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Change a section on your channel's home page. Only the fields you pass change.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "channels": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Channels to show instead of the current ones (UC… IDs, @handles, or URLs)."
+      },
+      "playlists": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Playlists to show instead of the current ones (IDs or URLs)."
+      },
+      "position": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "New 0-based position on the home page."
+      },
+      "section": {
+        "description": "Section ID, as listed for your channel.",
+        "type": "string"
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "New title."
+      }
+    },
+    "required": [
+      "section"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "channel_ids": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "id": {
+        "type": "string"
+      },
+      "playlist_ids": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "position": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "type": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "type"
+    ],
+    "type": "object"
+  }
+}

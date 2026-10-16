@@ -15,7 +15,7 @@
         "type": "string"
       },
       "limit": {
-        "default": 20,
+        "default": 25,
         "description": "Maximum number of replies.",
         "maximum": 500,
         "minimum": 1,

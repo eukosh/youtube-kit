@@ -1,0 +1,109 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Upload and set your channel's banner. Use a 16:9 image of at least 2048x1152, at most 6 MB.\n\nQuota: 101 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "image": {
+        "description": "Path to a JPEG or PNG.",
+        "format": "path",
+        "type": "string"
+      }
+    },
+    "required": [
+      "image"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "banner_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "channel_id": {
+        "type": "string"
+      },
+      "country": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "keywords": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "trailer_video_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Shown to visitors who aren't subscribed."
+      }
+    },
+    "required": [
+      "channel_id"
+    ],
+    "type": "object"
+  }
+}

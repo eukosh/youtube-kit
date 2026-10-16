@@ -218,3 +218,16 @@ def test_processing_status_is_owner_only(api):
     api.oauth.videos().list().execute.return_value = {"items": [{"id": "dQw4w9WgXcQ"}]}
     with pytest.raises(Forbidden, match="owner"):
         videos.get_processing_status("dQw4w9WgXcQ")
+
+
+def test_rate_video(api):
+    assert videos.rate_video("https://youtu.be/dQw4w9WgXcQ", "like").rating == "like"
+    assert api.oauth.videos().rate.call_args.kwargs == {"id": "dQw4w9WgXcQ", "rating": "like"}
+
+
+def test_get_my_ratings_reports_unrated_as_none(api):
+    api.oauth.videos().getRating().execute.return_value = {
+        "items": [{"videoId": "dQw4w9WgXcQ", "rating": "dislike"}, {"videoId": "abcdefghijk", "rating": "unspecified"}]
+    }
+    ratings = videos.get_my_ratings(["dQw4w9WgXcQ", "abcdefghijk"])
+    assert [(r.video_id, r.rating) for r in ratings] == [("dQw4w9WgXcQ", "dislike"), ("abcdefghijk", "none")]

@@ -1,6 +1,6 @@
 # Plan: feature expansion and guarded deletes
 
-Status: in progress. Reviewed by three Fable passes (CLI ergonomics, correctness, maintainability).
+Status: implemented. Reviewed by three Fable passes (CLI ergonomics, correctness, maintainability); the delete policy is recorded in ADR 0002.
 
 Scope agreed with the owner (2026-10-16): analytics, comment management, the gap-fillers,
 channel branding, subscriptions and ratings. Out of scope: captions, localizations.

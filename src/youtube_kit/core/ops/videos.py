@@ -2,17 +2,17 @@ import itertools
 import re
 import time
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from googleapiclient.http import MediaFileUpload
 from pydantic import Field
 
 from .. import client, guard, parse, progress
 from ..errors import Forbidden, InvalidRequest, NotFound, TimedOut
-from ..models import Deleted, Privacy, ProcessingStatus, ThumbnailResult, Video, VideoCategory, VideoStats
+from ..models import Deleted, Privacy, ProcessingStatus, ThumbnailResult, Video, VideoCategory, VideoRating, VideoStats
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE
-from ._common import changes, delete_if_present, existing_file, image_upload, one, pick, to_int, video_url
+from ._common import changes, delete_if_present, existing_file, image_upload, one, pick, to_int, unique_ids, video_url
 from .channels import my_channel_id
 
 # Multiple of 256 KiB (API requirement); small enough to report progress regularly.
@@ -31,9 +31,7 @@ def get_videos(videos: list[str]) -> list[Video]:
     Args:
         videos: Video IDs or URLs. Fetched in batches of 50, 1 quota unit per batch.
     """
-    ids = list(dict.fromkeys(parse.video_id(v) for v in videos))
-    if not ids:
-        raise InvalidRequest("Pass at least one video ID or URL.")
+    ids = unique_ids(videos, parse.video_id, "video ID or URL")
     found: list[Video] = []
     for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
         response = (
@@ -43,6 +41,37 @@ def get_videos(videos: list[str]) -> list[Video]:
     if not found:
         raise NotFound(f"Video {ids[0]} not found." if len(ids) == 1 else f"None of the {len(ids)} videos were found.")
     return found
+
+
+@operation(quota=50, idempotent=True, oauth=True)
+def rate_video(video: str, rating: Literal["like", "dislike", "none"]) -> VideoRating:
+    """Like or dislike a video as the authorized user, or clear the rating with none.
+
+    Args:
+        video: Video ID or URL.
+        rating: like, dislike, or none.
+    """
+    video_id = parse.video_id(video)
+    client.oauth().videos().rate(id=video_id, rating=rating).execute()
+    return VideoRating(video_id=video_id, rating=rating)
+
+
+@operation(quota=1, read_only=True, idempotent=True, oauth=True)
+def get_my_ratings(videos: list[str]) -> list[VideoRating]:
+    """Whether the authorized user liked or disliked each video.
+
+    Args:
+        videos: Video IDs or URLs. Fetched in batches of 50, 1 quota unit per batch.
+    """
+    ids = unique_ids(videos, parse.video_id, "video ID or URL")
+    ratings: list[VideoRating] = []
+    for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
+        response = client.oauth().videos().getRating(id=",".join(batch)).execute()
+        ratings.extend(
+            VideoRating(video_id=item["videoId"], rating=item["rating"] if item["rating"] != "unspecified" else "none")
+            for item in response.get("items", [])
+        )
+    return ratings
 
 
 @operation(quota=1, read_only=True, idempotent=True)

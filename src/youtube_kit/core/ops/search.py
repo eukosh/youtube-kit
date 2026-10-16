@@ -22,7 +22,7 @@ def search(
     *,
     kind: SearchKind = "video",
     limit: SearchLimit = 10,
-    order: Literal["relevance", "date", "rating", "viewCount", "title"] = "relevance",
+    order: Literal["relevance", "date", "rating", "views", "title"] = "relevance",
     channel: str | None = None,
     since: str | None = None,
     page_token: str | None = None,
@@ -38,7 +38,12 @@ def search(
         since: Only results published at or after this date or datetime (2026-01-01), or this long ago (90d, 4w).
         page_token: Continue from a previous result's next_page_token.
     """
-    params: dict[str, Any] = {"part": "snippet", "q": query, "type": kind, "order": order}
+    params: dict[str, Any] = {
+        "part": "snippet",
+        "q": query,
+        "type": kind,
+        "order": "viewCount" if order == "views" else order,
+    }
     if channel:
         params["channelId"] = resolve_channel_id(channel)
     if since:

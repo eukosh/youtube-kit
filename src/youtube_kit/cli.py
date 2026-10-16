@@ -26,7 +26,7 @@ from . import core
 from .core import auth, progress
 from .core.config import Settings
 from .core.models import AuthStatus
-from .core.ops import analytics, channels, comments, playlists, search, videos
+from .core.ops import analytics, branding, channels, comments, playlists, search, subscriptions, videos
 
 app = cyclopts.App(
     name="ytk",
@@ -39,7 +39,10 @@ app = cyclopts.App(
 video = app.command(cyclopts.App(name="video", help="Look up, upload, edit, and delete videos."))
 playlist = app.command(cyclopts.App(name="playlist", help="Look up and manage playlists."))
 comment = app.command(cyclopts.App(name="comment", help="Read, write, and moderate comments."))
-channel = app.command(cyclopts.App(name="channel", help="Look up channels and their activity."))
+channel = app.command(cyclopts.App(name="channel", help="Look up channels, and brand your own."))
+watermark = channel.command(cyclopts.App(name="watermark", help="The subscribe watermark shown over your videos."))
+section = channel.command(cyclopts.App(name="section", help="Sections on a channel's home page."))
+subscription = app.command(cyclopts.App(name="subscription", help="Your subscriptions to other channels."))
 auth_app = app.command(cyclopts.App(name="auth", help="Authorize access to your YouTube account."))
 
 _NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
@@ -53,6 +56,8 @@ video.command(videos.upload_video, name="upload")
 video.command(videos.get_processing_status, name="status")
 video.command(videos.update_video, name="update", default_parameter=_NEGATIVES)
 video.command(videos.set_thumbnail, name="thumbnail")
+video.command(videos.rate_video, name="rate")
+video.command(videos.get_my_ratings, name="rating")
 video.command(videos.delete_video, name="delete")
 
 playlist.command(playlists.list_playlists, name="list")
@@ -77,8 +82,19 @@ comment.command(comments.hold_comments, name="hold")
 comment.command(comments.reject_comments, name="reject")
 
 channel.command(channels.get_channel, name="get")
-channel.command(channels.get_my_channel, name="mine")
 channel.command(channels.list_activities, name="activity")
+channel.command(branding.update_channel, name="update", default_parameter=_NEGATIVES)
+channel.command(branding.set_channel_banner, name="banner")
+watermark.command(branding.set_watermark, name="set")
+watermark.command(branding.remove_watermark, name="remove")
+section.command(branding.list_sections, name="list")
+section.command(branding.add_section, name="add")
+section.command(branding.update_section, name="update")
+section.command(branding.delete_section, name="delete")
+
+subscription.command(subscriptions.list_subscriptions, name="list")
+subscription.command(subscriptions.subscribe, name="add")
+subscription.command(subscriptions.unsubscribe, name="remove")
 
 
 @auth_app.command(name="login")

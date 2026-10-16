@@ -125,7 +125,7 @@ def test_auth_status_needs_no_network(capsys):
 
 def test_channel_mine_uses_oauth(capsys, api):
     api.oauth.channels().list().execute.return_value = {"items": [channel_item()]}
-    code, out, _ = run(capsys, "channel", "mine")
+    code, out, _ = run(capsys, "channel", "get")
     assert code == 0
     assert json.loads(out)["handle"] == "@channel"
 

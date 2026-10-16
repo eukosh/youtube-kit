@@ -1,0 +1,53 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Like or dislike a video as the authorized user, or clear the rating with none.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "rating": {
+        "description": "like, dislike, or none.",
+        "enum": [
+          "like",
+          "dislike",
+          "none"
+        ],
+        "type": "string"
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video",
+      "rating"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "rating": {
+        "enum": [
+          "like",
+          "dislike",
+          "none"
+        ],
+        "type": "string"
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "video_id",
+      "rating"
+    ],
+    "type": "object"
+  }
+}

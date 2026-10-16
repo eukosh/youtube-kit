@@ -11,7 +11,7 @@
     "additionalProperties": false,
     "properties": {
       "limit": {
-        "default": 20,
+        "default": 25,
         "description": "Maximum number of comments.",
         "maximum": 500,
         "minimum": 1,

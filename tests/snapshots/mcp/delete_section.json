@@ -1,0 +1,49 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Delete a section from your channel's home page. Its playlists and videos are not affected.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "section": {
+        "description": "Section ID, as listed for your channel.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "section"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "already_gone": {
+        "default": false,
+        "description": "Nothing to delete: it didn't exist or was already deleted.",
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "video",
+          "playlist",
+          "comment",
+          "section"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "kind",
+      "id"
+    ],
+    "type": "object"
+  }
+}

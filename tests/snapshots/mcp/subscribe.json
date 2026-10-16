@@ -1,0 +1,76 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Subscribe the authorized user to a channel. Already being subscribed is fine.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "channel": {
+        "description": "UC… channel ID, @handle, or channel URL. A handle or URL costs 1 more quota unit.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "channel"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "channel_id": {
+        "type": "string"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "id": {
+        "type": "string"
+      },
+      "subscribed_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "url": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "channel_id",
+      "url"
+    ],
+    "type": "object"
+  }
+}

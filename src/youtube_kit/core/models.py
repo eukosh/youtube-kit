@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 Privacy = Literal["private", "unlisted", "public"]
 SearchKind = Literal["video", "channel", "playlist"]
 CommentStatus = Literal["published", "held", "spam", "rejected"]
+Corner = Literal["top-left", "top-right", "bottom-left", "bottom-right"]
 
 
 class Page[T](BaseModel):
@@ -138,7 +139,7 @@ class PlaylistImage(BaseModel):
 
 
 class Deleted(BaseModel):
-    kind: Literal["video", "playlist", "comment"]
+    kind: Literal["video", "playlist", "comment", "section"]
     id: str
     already_gone: bool = Field(False, description="Nothing to delete: it didn't exist or was already deleted.")
 
@@ -176,3 +177,51 @@ class AuthStatus(BaseModel):
     granted_scopes: list[str] | None = None
     client_secrets_file: str
     client_secrets_present: bool
+
+
+class VideoRating(BaseModel):
+    video_id: str
+    rating: Literal["like", "dislike", "none"]
+
+
+class Subscription(BaseModel):
+    id: str
+    channel_id: str
+    url: str
+    title: str | None = None
+    description: str | None = None
+    subscribed_at: datetime | None = None
+
+
+class Unsubscribed(BaseModel):
+    channel_id: str
+    was_subscribed: bool
+
+
+class ChannelBranding(BaseModel):
+    channel_id: str
+    title: str | None = None
+    description: str | None = None
+    keywords: list[str] = []
+    country: str | None = None
+    language: str | None = None
+    trailer_video_id: str | None = Field(None, description="Shown to visitors who aren't subscribed.")
+    banner_url: str | None = None
+
+
+class Watermark(BaseModel):
+    channel_id: str
+    active: bool
+    corner: Corner | None = None
+    start_seconds: int | None = None
+    from_end: bool | None = None
+    duration_seconds: int | None = None
+
+
+class ChannelSection(BaseModel):
+    id: str
+    type: str
+    title: str | None = None
+    position: int | None = None
+    playlist_ids: list[str] = []
+    channel_ids: list[str] = []

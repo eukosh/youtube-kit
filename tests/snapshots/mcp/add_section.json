@@ -1,0 +1,140 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Add a section to your channel's home page. A channel has at most 10.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "channels": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Channels to show: UC… IDs, @handles, or channel URLs."
+      },
+      "kind": {
+        "description": "What the section shows. single-playlist needs one playlist, multiple-playlists several\nplaylists and a title, multiple-channels channels and a title.",
+        "enum": [
+          "single-playlist",
+          "multiple-playlists",
+          "popular-uploads",
+          "recent-uploads",
+          "all-playlists",
+          "multiple-channels",
+          "subscriptions",
+          "live-events",
+          "upcoming-events",
+          "completed-events"
+        ],
+        "type": "string"
+      },
+      "playlists": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Playlist IDs or URLs to show."
+      },
+      "position": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "0-based position on the home page. Added at the end when omitted."
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Section title, for the multiple-playlists and multiple-channels kinds."
+      }
+    },
+    "required": [
+      "kind"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "channel_ids": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "id": {
+        "type": "string"
+      },
+      "playlist_ids": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "position": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "type": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "type"
+    ],
+    "type": "object"
+  }
+}

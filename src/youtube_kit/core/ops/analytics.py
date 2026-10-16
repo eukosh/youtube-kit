@@ -9,8 +9,9 @@ from .. import client, parse
 from ..errors import InvalidRequest
 from ..models import AnalyticsReport
 from ..operation import operation
+from ._common import unique_ids
 
-_DIMENSIONS = {
+_API_DIMENSIONS = {
     "day": "day",
     "month": "month",
     "video": "video",
@@ -23,7 +24,7 @@ _DIMENSIONS = {
     "gender": "gender",
     "subscribed": "subscribedStatus",
 }
-Dimension = Literal[*_DIMENSIONS]  # type: ignore[valid-type]
+Dimension = Literal[*_API_DIMENSIONS]  # type: ignore[valid-type]
 DEFAULT_METRICS = (
     "views",
     "estimatedMinutesWatched",
@@ -82,9 +83,9 @@ def get_analytics(
         "metrics": ",".join(metrics),
     }
     if by:
-        params["dimensions"] = _DIMENSIONS[by]
+        params["dimensions"] = _API_DIMENSIONS[by]
     if videos:
-        params["filters"] = "video==" + ",".join(dict.fromkeys(parse.video_id(v) for v in videos))
+        params["filters"] = "video==" + ",".join(unique_ids(videos, parse.video_id, "video ID or URL"))
     if by == "video":
         # Video breakdowns are rejected without a sort and at most 200 rows.
         sort = sort or f"-{metrics[0]}"
@@ -95,7 +96,7 @@ def get_analytics(
         params["maxResults"] = limit
     response = client.analytics().reports().query(**params).execute()
     columns = [
-        by if by and header["name"] == _DIMENSIONS[by] else header["name"]
+        by if by and header["name"] == _API_DIMENSIONS[by] else header["name"]
         for header in response.get("columnHeaders", [])
     ]
     return AnalyticsReport(

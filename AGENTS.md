@@ -5,7 +5,8 @@ YouTube Data API v3 toolkit: the `ytk` CLI (primary) and an MCP server, both thi
 ## Working on it
 
 - Tests: `uv run pytest` (offline, API faked via the `api` fixture in `tests/conftest.py`). Lint and format: `uv run ruff check --fix . && uv run ruff format .`
-- An operation is one `@operation`-decorated function in `core/ops/`, with a Google-style `Args:` docstring. That docstring is the user-facing help on both surfaces, so word it for both and refer to other operations by what they do, never by a CLI or tool name. Then give it a command in `cli.py`; MCP registers it automatically.
+- An operation is one `@operation`-decorated function in `core/ops/<noun>.py`, with a Google-style `Args:` docstring. That docstring is the user-facing help on both surfaces, so word it for both and refer to other operations by what they do, never by a CLI or tool name. Then give it a `ytk <noun> <verb>` command in `cli.py`; MCP registers it automatically. Its tests go in `tests/ops/test_<noun>.py`.
+- Irreversible deletes go through `core/guard.py` (target-bound confirmation, damage limits, ownership check, idempotency). Read `docs/adr/0002-guarded-deletes.md` before adding or loosening one.
 - Core stays transport-free: it returns Pydantic models and raises `core.errors` types. Printing, exit codes, and FastMCP live in the adapters.
 - A change to any operation's signature, docstring, or model changes the MCP tool surface: regenerate with `UPDATE_SNAPSHOTS=1 uv run pytest tests/test_mcp.py` and review the diff.
 - The CLI's JSON-on-stdout and exit-code contract is documented in `skills/youtube/SKILL.md`; keep them in step.

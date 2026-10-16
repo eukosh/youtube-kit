@@ -1,0 +1,122 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Set the watermark shown over all your videos, replacing any current one. Viewers click it to subscribe.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "corner": {
+        "default": "bottom-right",
+        "description": "Where it appears.",
+        "enum": [
+          "top-left",
+          "top-right",
+          "bottom-left",
+          "bottom-right"
+        ],
+        "type": "string"
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Seconds to show it. Until the end of the video when omitted."
+      },
+      "from_end": {
+        "default": false,
+        "description": "Count start back from the end of the video.",
+        "type": "boolean"
+      },
+      "image": {
+        "description": "Path to a square JPEG or PNG, at least 150x150, at most 1 MB.",
+        "format": "path",
+        "type": "string"
+      },
+      "start": {
+        "default": 0,
+        "description": "Seconds from the start of the video when it appears, or from its end when counting from the end.",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "image"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "active": {
+        "type": "boolean"
+      },
+      "channel_id": {
+        "type": "string"
+      },
+      "corner": {
+        "anyOf": [
+          {
+            "enum": [
+              "top-left",
+              "top-right",
+              "bottom-left",
+              "bottom-right"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "duration_seconds": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "from_end": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "start_seconds": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "required": [
+      "channel_id",
+      "active"
+    ],
+    "type": "object"
+  }
+}

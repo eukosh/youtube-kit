@@ -46,7 +46,7 @@
           "relevance",
           "date",
           "rating",
-          "viewCount",
+          "views",
           "title"
         ],
         "type": "string"

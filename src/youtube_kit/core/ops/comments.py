@@ -2,11 +2,11 @@ import itertools
 from typing import Any, Literal
 
 from .. import client, guard, parse
-from ..errors import Forbidden, InvalidRequest
+from ..errors import Forbidden
 from ..models import Comment, CommentStatus, Deleted, Moderated, Page
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
-from ._common import delete_if_present
+from ._common import delete_if_present, unique_ids
 from .channels import my_channel_id
 
 _API_STATUS = {"published": "published", "held": "heldForReview", "spam": "likelySpam", "rejected": "rejected"}
@@ -20,7 +20,7 @@ def list_comments(
     status: CommentStatus = "published",
     search: str | None = None,
     order: Literal["relevance", "time"] = "time",
-    limit: Limit = 20,
+    limit: Limit = 25,
     page_token: str | None = None,
 ) -> Page[Comment]:
     """Top-level comments on a video, or on all of your channel's videos.
@@ -53,7 +53,7 @@ def list_comments(
 
 
 @operation(quota=1, read_only=True, idempotent=True, paginated=True)
-def list_replies(comment: str, *, limit: Limit = 20, page_token: str | None = None) -> Page[Comment]:
+def list_replies(comment: str, *, limit: Limit = 25, page_token: str | None = None) -> Page[Comment]:
     """Replies to a top-level comment.
 
     Args:
@@ -168,9 +168,7 @@ def reject_comments(comments: list[str], *, ban_author: bool = False) -> Moderat
 def _moderate(
     comments: list[str], status: Literal["published", "held", "rejected"], *, ban_author: bool = False
 ) -> Moderated:
-    ids = list(dict.fromkeys(parse.comment_id(c) for c in comments))
-    if not ids:
-        raise InvalidRequest("Pass at least one comment ID or link.")
+    ids = unique_ids(comments, parse.comment_id, "comment ID or link")
     youtube = client.oauth()
     extra = {"banAuthor": True} if ban_author else {}  # only valid with rejected
     for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):

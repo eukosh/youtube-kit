@@ -1,4 +1,5 @@
 import mimetypes
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,14 @@ def delete_if_present(request: HttpRequest) -> bool:
             return False
         raise
     return True
+
+
+def unique_ids(refs: list[str], parse_one: Callable[[str], str], what: str) -> list[str]:
+    """Parsed and deduplicated, in input order. Empty input is an error."""
+    ids = list(dict.fromkeys(parse_one(ref) for ref in refs))
+    if not ids:
+        raise InvalidRequest(f"Pass at least one {what}.")
+    return ids
 
 
 def one(response: dict, not_found: str) -> dict:

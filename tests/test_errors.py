@@ -46,7 +46,7 @@ def test_operations_translate_http_errors(api):
 def test_operations_translate_refresh_errors(api):
     api.oauth.channels().list().execute.side_effect = RefreshError("invalid_grant")
     with pytest.raises(errors.NotAuthorized, match="ytk auth login"):
-        channels.get_my_channel()
+        channels.get_channel()
 
 
 def test_invalid_api_key_points_at_the_env_var():

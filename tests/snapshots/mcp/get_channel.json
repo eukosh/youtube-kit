@@ -11,13 +11,18 @@
     "additionalProperties": false,
     "properties": {
       "channel": {
-        "description": "UC… channel ID, @handle (the @ is optional), or channel URL.",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "UC… channel ID, @handle (the @ is optional), or channel URL. Omit for your own channel."
       }
     },
-    "required": [
-      "channel"
-    ],
     "type": "object"
   },
   "output_schema": {

@@ -23,7 +23,7 @@ Rules that keep it that way:
 - Core normalises inputs: IDs or pasted URLs, `@handles`, plain dates.
 - Cross-cutting concerns that must not appear in signatures (upload progress) travel through a `ContextVar` (`core.progress`). Each adapter installs its own reporter: a TTY progress line, or MCP progress notifications.
 - The MCP adapter wraps each operation to turn `YouTubeError` into `ToolError`. FastMCP masks any other exception before middleware runs, so the translation has to sit in that wrapper.
-- `tests/test_surface.py` fails if either adapter misses an operation. `tests/snapshots/mcp_tools.json` pins the MCP tool surface and gates FastMCP upgrades.
+- `tests/test_surface.py` fails if either adapter misses an operation. `tests/snapshots/mcp/` (one file per tool) pins the MCP tool surface and gates FastMCP upgrades.
 
 ## Alternatives rejected
 

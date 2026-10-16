@@ -37,9 +37,9 @@ def test_get_channel_not_found(api):
         channels.get_channel("@nobody")
 
 
-def test_get_my_channel_uses_oauth(api):
+def test_get_channel_defaults_to_mine(api):
     api.oauth.channels().list().execute.return_value = {"items": [channel_item()]}
-    assert channels.get_my_channel().id == CHANNEL_ID
+    assert channels.get_channel().id == CHANNEL_ID
     assert api.oauth.channels().list.call_args.kwargs["mine"] is True
 
 

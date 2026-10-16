@@ -46,7 +46,8 @@
         "enum": [
           "video",
           "playlist",
-          "comment"
+          "comment",
+          "section"
         ],
         "type": "string"
       }
