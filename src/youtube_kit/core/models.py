@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 Privacy = Literal["private", "unlisted", "public"]
 SearchKind = Literal["video", "channel", "playlist"]
+CommentStatus = Literal["published", "held", "spam", "rejected"]
 
 
 class Page[T](BaseModel):
@@ -77,11 +78,22 @@ class PlaylistEntry(BaseModel):
 
 class Comment(BaseModel):
     id: str
+    video_id: str | None = None
     author: str
+    author_channel_id: str | None = None
     text: str
-    likes: int
+    likes: int | None = None
     published_at: datetime
-    reply_count: int
+    updated_at: datetime | None = None
+    reply_count: int | None = Field(None, description="Top-level comments only.")
+    parent_id: str | None = Field(None, description="Replies only: the comment replied to.")
+    status: CommentStatus | None = Field(None, description="Moderation status, where YouTube reports it.")
+
+
+class Moderated(BaseModel):
+    comment_ids: list[str]
+    status: CommentStatus
+    authors_banned: bool = False
 
 
 class VideoCategory(BaseModel):
@@ -154,5 +166,6 @@ class AuthStatus(BaseModel):
     api_key_set: bool
     token_file: str
     token_present: bool
+    granted_scopes: list[str] | None = None
     client_secrets_file: str
     client_secrets_present: bool

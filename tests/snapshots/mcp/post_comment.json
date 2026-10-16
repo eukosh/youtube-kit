@@ -1,0 +1,139 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Post a top-level comment on a video as the authorized user.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "text": {
+        "description": "The comment.",
+        "type": "string"
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video",
+      "text"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "author": {
+        "type": "string"
+      },
+      "author_channel_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "id": {
+        "type": "string"
+      },
+      "likes": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "parent_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Replies only: the comment replied to."
+      },
+      "published_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "reply_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Top-level comments only."
+      },
+      "status": {
+        "anyOf": [
+          {
+            "enum": [
+              "published",
+              "held",
+              "spam",
+              "rejected"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Moderation status, where YouTube reports it."
+      },
+      "text": {
+        "type": "string"
+      },
+      "updated_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "video_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "required": [
+      "id",
+      "author",
+      "text",
+      "published_at"
+    ],
+    "type": "object"
+  }
+}

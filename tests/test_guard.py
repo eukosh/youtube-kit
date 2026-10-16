@@ -5,9 +5,9 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from youtube_kit.core.errors import ConfirmationRequired, Forbidden, InvalidRequest, Protected
-from youtube_kit.core.ops import playlists, videos
+from youtube_kit.core.ops import comments, playlists, videos
 
-from .fakes import http_error, playlist_resource, video_item
+from .fakes import comment_resource, http_error, playlist_resource, video_item
 
 RECENT = (datetime.now(UTC) - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -18,48 +18,54 @@ def deletable_video(**overrides) -> dict:
     return {**item, **overrides}
 
 
-@pytest.fixture(params=["video", "playlist"])
+TARGETS = {
+    "video": (videos.delete_video, "dQw4w9WgXcQ", "videos", deletable_video),
+    "playlist": (playlists.delete_playlist, "PL1", "playlists", playlist_resource),
+    "comment": (comments.delete_comment, "Ugc1", "comments", comment_resource),
+}
+
+
+@pytest.fixture(params=TARGETS)
 def target(request, api, my_channel):
-    """A guarded delete op wired to an existing target: (op, target ID, the fake API resource)."""
-    if request.param == "video":
-        api.oauth.videos().list().execute.return_value = {"items": [deletable_video()]}
-        return videos.delete_video, "dQw4w9WgXcQ", api.oauth.videos()
-    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
-    return playlists.delete_playlist, "PL1", api.oauth.playlists()
+    """A guarded delete wired to an existing target: (op, target ID, the fake API resource, kind)."""
+    delete, target_id, resource_name, item = TARGETS[request.param]
+    resource = getattr(api.oauth, resource_name)()
+    resource.list().execute.return_value = {"items": [item()]}
+    return delete, target_id, resource, request.param
 
 
 def test_without_confirm_nothing_is_deleted_and_the_target_is_described(target):
-    delete, target_id, resource = target
+    delete, target_id, resource, kind = target
     with pytest.raises(ConfirmationRequired) as caught:
         delete(target_id)
     assert caught.value.details["confirm"] == target_id
-    assert caught.value.details["title"]
+    assert caught.value.details["kind"] == kind
     resource.delete.assert_not_called()
 
 
 def test_confirm_must_name_the_target(target):
-    delete, target_id, resource = target
+    delete, target_id, resource, _ = target
     with pytest.raises(InvalidRequest):
         delete(target_id, confirm="nope")
     resource.delete.assert_not_called()
 
 
 def test_confirmed_delete(target):
-    delete, target_id, resource = target
+    delete, target_id, resource, _ = target
     result = delete(target_id, confirm=target_id)
     assert (result.id, result.already_gone) == (target_id, False)
     assert resource.delete.call_args.kwargs == {"id": target_id}
 
 
 def test_already_gone_is_success(target):
-    delete, target_id, resource = target
+    delete, target_id, resource, _ = target
     resource.list().execute.return_value = {"items": []}
     assert delete(target_id).already_gone
     resource.delete.assert_not_called()
 
 
 def test_gone_between_check_and_delete_is_success(target):
-    delete, target_id, resource = target
+    delete, target_id, resource, _ = target
     resource.delete().execute.side_effect = http_error(404, "notFound")
     assert delete(target_id, confirm=target_id).already_gone
 

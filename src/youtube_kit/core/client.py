@@ -1,4 +1,4 @@
-"""googleapiclient Resources for the YouTube Data API.
+"""googleapiclient Resources for the YouTube Data and Analytics APIs.
 
 Resources are cached per thread because httplib2 connections are not thread-safe
 and the MCP server runs sync tools on worker threads. The OAuth client is keyed by
@@ -30,11 +30,24 @@ def public() -> Resource:
 def oauth() -> Resource:
     """Client acting as the authorized user (uploads, edits, own channel)."""
     settings = Settings.from_env()
+    return _cached("oauth", _token_key(settings), lambda: _build(credentials=auth.load_credentials(settings)))
+
+
+def analytics() -> Resource:
+    """YouTube Analytics client for the authorized user's channel."""
+    settings = Settings.from_env()
+    return _cached(
+        "analytics",
+        _token_key(settings),
+        lambda: _build("youtubeAnalytics", "v2", credentials=auth.load_credentials(settings, auth.ANALYTICS)),
+    )
+
+
+def _token_key(settings: Settings) -> int | None:
     try:
-        key = settings.token_file.stat().st_mtime_ns
+        return settings.token_file.stat().st_mtime_ns
     except FileNotFoundError:
-        key = None  # load_credentials raises the actionable error
-    return _cached("oauth", key, lambda: _build(credentials=auth.load_credentials(settings)))
+        return None  # load_credentials raises the actionable error
 
 
 def _cached(slot: str, key: object, make) -> Resource:
@@ -45,5 +58,5 @@ def _cached(slot: str, key: object, make) -> Resource:
     return cached[1]
 
 
-def _build(**kwargs) -> Resource:
-    return build("youtube", "v3", cache_discovery=False, static_discovery=True, **kwargs)
+def _build(service: str = "youtube", version: str = "v3", **kwargs) -> Resource:
+    return build(service, version, cache_discovery=False, static_discovery=True, **kwargs)

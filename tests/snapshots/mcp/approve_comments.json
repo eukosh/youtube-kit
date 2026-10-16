@@ -1,0 +1,54 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Publish comments on your videos that are held for review or marked as likely spam.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "comments": {
+        "description": "Comment IDs or links. 50 quota units per 50 comments.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "comments"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "authors_banned": {
+        "default": false,
+        "type": "boolean"
+      },
+      "comment_ids": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "status": {
+        "enum": [
+          "published",
+          "held",
+          "spam",
+          "rejected"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "comment_ids",
+      "status"
+    ],
+    "type": "object"
+  }
+}

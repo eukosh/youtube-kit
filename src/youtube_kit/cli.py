@@ -16,6 +16,7 @@ import shlex
 import sys
 from collections.abc import Iterator, Sequence
 from importlib.metadata import version
+from typing import Annotated
 
 import cyclopts
 import pydantic_core
@@ -31,21 +32,25 @@ app = cyclopts.App(
     name="ytk",
     help="YouTube Data API from the command line. Prints JSON; see `ytk <command> --help`.",
     version=version("youtube-kit"),
+    # No --no-X / --empty-X flags, except on update commands where "unset" and "clear" mean something.
+    default_parameter=cyclopts.Parameter(negative_bool=(), negative_iterable=()),
 )
 
 video = app.command(cyclopts.App(name="video", help="Look up, upload, edit, and delete videos."))
 playlist = app.command(cyclopts.App(name="playlist", help="Look up and manage playlists."))
+comment = app.command(cyclopts.App(name="comment", help="Read, write, and moderate comments."))
 channel = app.command(cyclopts.App(name="channel", help="Look up channels and their activity."))
 auth_app = app.command(cyclopts.App(name="auth", help="Authorize access to your YouTube account."))
+
+_NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
 
 app.command(search.search, name="search")
 
 video.command(videos.get_videos, name="get")
-video.command(comments.list_comments, name="comments")
 video.command(videos.list_video_categories, name="categories")
 video.command(videos.upload_video, name="upload")
 video.command(videos.get_processing_status, name="status")
-video.command(videos.update_video, name="update")
+video.command(videos.update_video, name="update", default_parameter=_NEGATIVES)
 video.command(videos.set_thumbnail, name="thumbnail")
 video.command(videos.delete_video, name="delete")
 
@@ -60,13 +65,23 @@ playlist.command(playlists.add_video_to_playlist, name="add")
 playlist.command(playlists.remove_from_playlist, name="remove")
 playlist.command(playlists.move_in_playlist, name="move")
 
+comment.command(comments.list_comments, name="list")
+comment.command(comments.list_replies, name="replies")
+comment.command(comments.post_comment, name="post")
+comment.command(comments.reply_to_comment, name="reply")
+comment.command(comments.edit_comment, name="edit")
+comment.command(comments.delete_comment, name="delete")
+comment.command(comments.approve_comments, name="approve")
+comment.command(comments.hold_comments, name="hold")
+comment.command(comments.reject_comments, name="reject")
+
 channel.command(channels.get_channel, name="get")
 channel.command(channels.get_my_channel, name="mine")
 channel.command(channels.list_activities, name="activity")
 
 
 @auth_app.command(name="login")
-def auth_login(*, browser: bool = True) -> AuthStatus:
+def auth_login(*, browser: Annotated[bool, cyclopts.Parameter(negative_bool=None)] = True) -> AuthStatus:
     """Authorize your YouTube account through Google's OAuth consent screen.
 
     Needs an OAuth client of type "Desktop app" saved as client_secrets.json

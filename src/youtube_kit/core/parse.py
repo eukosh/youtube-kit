@@ -10,6 +10,7 @@ from .errors import InvalidRequest
 
 _VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _CHANNEL_ID = re.compile(r"^UC[A-Za-z0-9_-]{22}$")
+_COMMENT_ID = re.compile(r"^[A-Za-z0-9_.-]+$")  # YouTube documents no shape; replies are "<parent>.<reply>"
 _VIDEO_PATH_PREFIXES = ("shorts", "embed", "live", "v", "e", "video")  # "video": studio.youtube.com
 _YOUTUBE_DOMAINS = ("youtube.com", "youtube-nocookie.com")
 
@@ -78,6 +79,20 @@ def playlist_id(ref: str) -> str:
         if "list" in query:
             return query["list"][0]
     raise InvalidRequest(f"Not a YouTube playlist ID or URL: {ref!r}")
+
+
+def comment_id(ref: str) -> str:
+    """Comment ID from an ID or a comment's permalink (a video URL with lc=)."""
+    ref = ref.strip()
+    url = _parse_url(ref)
+    if url is None:
+        if _COMMENT_ID.match(ref):
+            return ref
+    else:
+        _, _, query = url
+        if "lc" in query and _COMMENT_ID.match(query["lc"][0]):
+            return query["lc"][0]
+    raise InvalidRequest(f"Not a YouTube comment ID or comment link: {ref!r}")
 
 
 def timestamp(value: str) -> str:

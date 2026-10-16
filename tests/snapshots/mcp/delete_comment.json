@@ -1,0 +1,60 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Permanently delete one of your own comments or replies. Deleting a top-level comment deletes its replies.\n\nOthers' comments on your videos can't be deleted, only rejected, which hides them.\nWithout confirm, nothing is deleted and the error describes the comment.\n\nQuota: 52 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "comment": {
+        "description": "Comment ID or link.",
+        "type": "string"
+      },
+      "confirm": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The comment ID again, passed only after the user has approved deleting this comment."
+      }
+    },
+    "required": [
+      "comment"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "already_gone": {
+        "default": false,
+        "description": "Nothing to delete: it didn't exist or was already deleted.",
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "video",
+          "playlist",
+          "comment"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "kind",
+      "id"
+    ],
+    "type": "object"
+  }
+}

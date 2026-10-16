@@ -6,20 +6,20 @@
     "read_only_hint": true,
     "title": null
   },
-  "description": "Top-level comment threads on a video.\n\nQuota: 1 unit per page of up to 50 results.",
+  "description": "Top-level comments on a video, or on all of your channel's videos.\n\nQuota: 1 unit per page of up to 50 results.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
       "limit": {
         "default": 20,
-        "description": "Maximum number of comment threads.",
+        "description": "Maximum number of comments.",
         "maximum": 500,
         "minimum": 1,
         "type": "integer"
       },
       "order": {
-        "default": "relevance",
-        "description": "Most relevant first, or newest first.",
+        "default": "time",
+        "description": "Newest first, or most relevant first.",
         "enum": [
           "relevance",
           "time"
@@ -38,14 +38,42 @@
         "default": null,
         "description": "Continue from a previous result's next_page_token."
       },
-      "video": {
-        "description": "Video ID or URL.",
+      "search": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only comments containing these words."
+      },
+      "status": {
+        "default": "published",
+        "description": "Moderation status to list; spam is what YouTube flagged as likely spam. Anything but published\nis only visible on your own videos.",
+        "enum": [
+          "published",
+          "held",
+          "spam",
+          "rejected"
+        ],
         "type": "string"
+      },
+      "video": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Video ID or URL. Omit for every video on your channel."
       }
     },
-    "required": [
-      "video"
-    ],
     "type": "object"
   },
   "output_schema": {
@@ -56,30 +84,109 @@
             "author": {
               "type": "string"
             },
+            "author_channel_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "id": {
               "type": "string"
             },
             "likes": {
-              "type": "integer"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "parent_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Replies only: the comment replied to."
             },
             "published_at": {
               "format": "date-time",
               "type": "string"
             },
             "reply_count": {
-              "type": "integer"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Top-level comments only."
+            },
+            "status": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "published",
+                    "held",
+                    "spam",
+                    "rejected"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Moderation status, where YouTube reports it."
             },
             "text": {
               "type": "string"
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "video_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             }
           },
           "required": [
             "id",
             "author",
             "text",
-            "likes",
-            "published_at",
-            "reply_count"
+            "published_at"
           ],
           "type": "object"
         },

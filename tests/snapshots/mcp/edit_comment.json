@@ -1,0 +1,139 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Replace the text of one of your own comments or replies.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "comment": {
+        "description": "Comment ID or link.",
+        "type": "string"
+      },
+      "text": {
+        "description": "The new text.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "comment",
+      "text"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "author": {
+        "type": "string"
+      },
+      "author_channel_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "id": {
+        "type": "string"
+      },
+      "likes": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "parent_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Replies only: the comment replied to."
+      },
+      "published_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "reply_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Top-level comments only."
+      },
+      "status": {
+        "anyOf": [
+          {
+            "enum": [
+              "published",
+              "held",
+              "spam",
+              "rejected"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Moderation status, where YouTube reports it."
+      },
+      "text": {
+        "type": "string"
+      },
+      "updated_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "video_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "required": [
+      "id",
+      "author",
+      "text",
+      "published_at"
+    ],
+    "type": "object"
+  }
+}

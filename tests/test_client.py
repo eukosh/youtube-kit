@@ -22,7 +22,7 @@ def builds(monkeypatch):
     """Record build() calls instead of constructing real Resources."""
     calls = []
 
-    def fake_build(**kwargs):
+    def fake_build(*api, **kwargs):
         calls.append(kwargs)
         return object()
 
@@ -78,3 +78,15 @@ def test_clients_are_per_thread(monkeypatch, builds):
     thread.start()
     thread.join()
     assert other[0] is not main
+
+
+def test_analytics_needs_the_analytics_scope(builds):
+    write_token(Settings.from_env().token_file)
+    with pytest.raises(NotAuthorized, match="analytics access"):
+        client.analytics()
+
+
+def test_analytics_with_the_scope(builds):
+    write_token(Settings.from_env().token_file, scopes=auth.SCOPES)
+    assert client.analytics() is client.analytics()
+    assert len(builds) == 1

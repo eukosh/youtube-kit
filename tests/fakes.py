@@ -1,4 +1,7 @@
-"""Canned API responses and errors for tests."""
+"""Canned API responses and errors for tests.
+
+`video_item` and `channel_item` take top-level overrides; the `*_resource` builders take snippet fields.
+"""
 
 import json
 
@@ -60,6 +63,7 @@ def write_token(path, **overrides) -> None:
         "client_secret": "secret",
         "token_uri": "https://oauth2.googleapis.com/token",
         "expiry": "2999-01-01T00:00:00Z",
+        "scopes": ["https://www.googleapis.com/auth/youtube.force-ssl"],
         **overrides,
     }
     path.write_text(json.dumps(token))
@@ -82,4 +86,27 @@ def playlist_resource(playlist_id: str = "PL1", **snippet) -> dict:
         "snippet": {"title": "Mix", "description": "Songs", "channelId": CHANNEL_ID, **snippet},
         "status": {"privacyStatus": "public"},
         "contentDetails": {"itemCount": 4},
+    }
+
+
+def comment_resource(comment_id: str = "Ugc1", author_channel_id: str = CHANNEL_ID, **snippet) -> dict:
+    return {
+        "id": comment_id,
+        "snippet": {
+            "videoId": "dQw4w9WgXcQ",
+            "authorDisplayName": "Me",
+            "authorChannelId": {"value": author_channel_id},
+            "textDisplay": "Nice",
+            "likeCount": 5,
+            "publishedAt": "2026-01-01T00:00:00Z",
+            **snippet,
+        },
+    }
+
+
+def thread_resource(comment: dict | None = None, replies: int = 2) -> dict:
+    comment = comment or comment_resource()
+    return {
+        "id": comment["id"],
+        "snippet": {"videoId": "dQw4w9WgXcQ", "totalReplyCount": replies, "topLevelComment": comment},
     }

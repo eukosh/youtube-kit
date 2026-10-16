@@ -100,3 +100,21 @@ def test_timestamp_normalises_to_utc(value, expected):
 def test_timestamp_rejects_garbage():
     with pytest.raises(InvalidRequest):
         parse.timestamp("last tuesday")
+
+
+@pytest.mark.parametrize(
+    ("ref", "expected"),
+    [
+        ("UgzAbc123", "UgzAbc123"),
+        ("UgzAbc123.9xYz", "UgzAbc123.9xYz"),
+        ("https://www.youtube.com/watch?v=dQw4w9WgXcQ&lc=UgzAbc123", "UgzAbc123"),
+    ],
+)
+def test_comment_id(ref, expected):
+    assert parse.comment_id(ref) == expected
+
+
+@pytest.mark.parametrize("ref", ["", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "a b"])
+def test_comment_id_rejects(ref):
+    with pytest.raises(InvalidRequest):
+        parse.comment_id(ref)
