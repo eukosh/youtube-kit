@@ -10,7 +10,7 @@ YouTube Data API v3 toolkit: the `ytk` CLI (primary) and an MCP server, both thi
 - Core stays transport-free: it returns Pydantic models and raises `core.errors` types. Printing, exit codes, and FastMCP live in the adapters.
 - A change to any operation's signature, docstring, or model changes the MCP tool surface: regenerate with `UPDATE_SNAPSHOTS=1 uv run pytest tests/test_mcp.py` and review the diff.
 - The CLI's JSON-on-stdout and exit-code contract is documented in `skills/youtube/SKILL.md`; keep them in step.
-- Commit messages and PR titles follow Conventional Commits (`feat:`, `fix:`, `docs:`, …). `feat` and `fix` subjects become changelog lines, so write them for users. Never bump the version or edit `CHANGELOG.md` by hand; Release Please does both.
+- Commit messages and PR titles follow Conventional Commits (`feat:`, `fix:`, `docs:`, …). `feat`, `fix` and `perf` subjects become changelog lines, so write them for users. Never bump the version or edit `CHANGELOG.md` by hand; Release Please does both.
 
 ## Agent skills
 

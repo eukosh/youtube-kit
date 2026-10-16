@@ -38,6 +38,7 @@ uv run ruff check --fix . && uv run ruff format .  # lint and format
   and include the diff in your pull request.
 - Irreversible deletes must go through `core/guard.py`; see
   [ADR 0002](docs/adr/0002-guarded-deletes.md).
+
 ## Pull request titles
 
 Pull requests are squash-merged, and the title becomes both the commit message and the
@@ -53,7 +54,8 @@ and a check enforces it:
 
 Write the title for users: `feat: list comments held for review`, not
 `feat: add moderationStatus param`. Mark a breaking change with `!` (`feat!: rename
---since to --from`) and explain the migration in the description.
+--since to --from`) and explain the migration in the description. Until 1.0, both `feat`
+and breaking changes bump the minor version, and `fix` the patch version.
 
 To correct the changelog entry of a pull request that is already merged, edit its
 description and add the text to use instead:
@@ -71,11 +73,17 @@ request open that bumps the version in `pyproject.toml` and `uv.lock` and adds t
 changelog entry. Merging it tags the release, creates the GitHub release, and publishes
 to PyPI.
 
+The release pull request shows no checks, because pull requests opened by GitHub Actions
+don't trigger workflows. That's expected: the release job runs the tests again before it
+publishes.
+
 One-time setup:
 
-- Create a GitHub environment named `pypi`, and add the repository as a
-  [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI (workflow
-  `release.yml`, environment `pypi`).
+- On PyPI, add the repository as a [trusted publisher](https://docs.pypi.org/trusted-publishers/)
+  (a pending publisher before the first release): workflow `release.yml`, environment `pypi`.
+- In Settings → General → Pull Requests, allow only squash merging, with "Pull request
+  title" as the default commit message. Otherwise a one-commit pull request lands with its
+  commit message, and the changelog misses it.
 - In Settings → Actions → General, allow GitHub Actions to create pull requests.
 
 If publishing fails, rerun the failed jobs, or run the Release workflow by hand with the
