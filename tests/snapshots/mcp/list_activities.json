@@ -1,0 +1,160 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "A channel's recent activity feed (uploads, playlist additions, and the like).\n\nQuota: 1 unit per page of up to 50 results.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "UC… channel ID, @handle, or channel URL. Omit for your own channel."
+      },
+      "limit": {
+        "default": 25,
+        "description": "Maximum number of activities.",
+        "maximum": 500,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Continue from a previous result's next_page_token."
+      },
+      "since": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only activity at or after this date or datetime."
+      }
+    },
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "items": {
+        "items": {
+          "properties": {
+            "channel_id": {
+              "type": "string"
+            },
+            "playlist_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "For playlist additions."
+            },
+            "published_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "target_channel_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "For subscriptions and channel shares."
+            },
+            "title": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "type": {
+              "type": "string"
+            },
+            "video_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "type",
+            "published_at",
+            "channel_id"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "next_page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Pass as page_token to continue; null at the end."
+      },
+      "total_results": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Total reported by YouTube; only an estimate for search."
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "type": "object"
+  }
+}

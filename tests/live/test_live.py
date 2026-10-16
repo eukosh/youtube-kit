@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from youtube_kit import core
+from youtube_kit.core.ops import channels, playlists, videos
 
 pytestmark = [
     pytest.mark.live,
@@ -21,12 +21,12 @@ def real_api_key(monkeypatch):
 
 
 def test_channel_and_uploads():
-    channel = core.get_channel("@YouTube")
-    page = core.list_playlist_items(channel.uploads_playlist_id, limit=3)
+    channel = channels.get_channel("@YouTube")
+    page = playlists.list_playlist_items(channel.uploads_playlist_id, limit=3)
     assert len(page.items) == 3
-    videos = core.get_videos([entry.video_id for entry in page.items])
-    assert all(video.url.startswith("https://") for video in videos)
+    found = videos.get_videos([entry.video_id for entry in page.items])
+    assert all(video.url.startswith("https://") for video in found)
 
 
 def test_categories():
-    assert any(category.id == "22" for category in core.list_video_categories())
+    assert any(category.id == "22" for category in videos.list_video_categories())

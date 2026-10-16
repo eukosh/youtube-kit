@@ -1,0 +1,48 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Video categories that can be assigned to uploads in a region, with the IDs to pass as category_id.\n\nQuota: 1 unit.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "region": {
+        "default": "US",
+        "description": "ISO 3166-1 alpha-2 country code.",
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "result": {
+        "items": {
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "result"
+    ],
+    "type": "object",
+    "x-fastmcp-wrap-result": true
+  }
+}

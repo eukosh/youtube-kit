@@ -1,0 +1,118 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Top-level comment threads on a video.\n\nQuota: 1 unit per page of up to 50 results.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "limit": {
+        "default": 20,
+        "description": "Maximum number of comment threads.",
+        "maximum": 500,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "order": {
+        "default": "relevance",
+        "description": "Most relevant first, or newest first.",
+        "enum": [
+          "relevance",
+          "time"
+        ],
+        "type": "string"
+      },
+      "page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Continue from a previous result's next_page_token."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "items": {
+        "items": {
+          "properties": {
+            "author": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "likes": {
+              "type": "integer"
+            },
+            "published_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "reply_count": {
+              "type": "integer"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "author",
+            "text",
+            "likes",
+            "published_at",
+            "reply_count"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "next_page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Pass as page_token to continue; null at the end."
+      },
+      "total_results": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Total reported by YouTube; only an estimate for search."
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "type": "object"
+  }
+}

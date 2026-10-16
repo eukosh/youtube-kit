@@ -1,0 +1,118 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Create a playlist on the authorized user's channel.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "description": {
+        "default": "",
+        "description": "Playlist description.",
+        "type": "string"
+      },
+      "privacy": {
+        "default": "private",
+        "description": "Privacy status.",
+        "enum": [
+          "private",
+          "unlisted",
+          "public"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "description": "Playlist title.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "title"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "channel_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "id": {
+        "type": "string"
+      },
+      "item_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "privacy": {
+        "anyOf": [
+          {
+            "enum": [
+              "private",
+              "unlisted",
+              "public"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "published_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "title": {
+        "type": "string"
+      },
+      "url": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "url",
+      "title"
+    ],
+    "type": "object"
+  }
+}

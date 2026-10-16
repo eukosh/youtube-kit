@@ -24,7 +24,7 @@ def search(
     limit: SearchLimit = 10,
     order: Literal["relevance", "date", "rating", "viewCount", "title"] = "relevance",
     channel: str | None = None,
-    published_after: str | None = None,
+    since: str | None = None,
     page_token: str | None = None,
 ) -> Page[SearchHit]:
     """Search YouTube for videos, channels, or playlists.
@@ -35,14 +35,14 @@ def search(
         limit: Maximum number of results. Each page of up to 50 costs 100 quota units.
         order: Sort order.
         channel: Only results from this channel: UC… ID, @handle, or channel URL.
-        published_after: Only results published after this date or datetime, e.g. 2026-01-01.
+        since: Only results published at or after this date or datetime, e.g. 2026-01-01.
         page_token: Continue from a previous result's next_page_token.
     """
     params: dict[str, Any] = {"part": "snippet", "q": query, "type": kind, "order": order}
     if channel:
         params["channelId"] = resolve_channel_id(channel)
-    if published_after:
-        params["publishedAfter"] = parse.timestamp(published_after)
+    if since:
+        params["publishedAfter"] = parse.timestamp(since)
     return collect(
         lambda **page: client.public().search().list(**params, **page),
         limit=limit,

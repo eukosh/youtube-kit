@@ -5,6 +5,8 @@ import json
 import httplib2
 from googleapiclient.errors import HttpError
 
+CHANNEL_ID = "UC" + "a" * 22
+
 
 def http_error(status: int, reason: str = "", message: str = "API says no.", details: str | None = None) -> HttpError:
     response = httplib2.Response({"status": status})
@@ -21,7 +23,7 @@ def video_item(video_id: str = "dQw4w9WgXcQ", **overrides) -> dict:
         "snippet": {
             "title": "Title",
             "description": "Description",
-            "channelId": "UC" + "a" * 22,
+            "channelId": CHANNEL_ID,
             "channelTitle": "Channel",
             "publishedAt": "2026-01-02T03:04:05Z",
             "tags": ["a", "b"],
@@ -35,7 +37,7 @@ def video_item(video_id: str = "dQw4w9WgXcQ", **overrides) -> dict:
     return item
 
 
-def channel_item(channel_id: str = "UC" + "a" * 22) -> dict:
+def channel_item(channel_id: str = CHANNEL_ID) -> dict:
     return {
         "id": channel_id,
         "snippet": {
@@ -61,3 +63,23 @@ def write_token(path, **overrides) -> None:
         **overrides,
     }
     path.write_text(json.dumps(token))
+
+
+def playlist_item_resource(position: int = 0, item_id: str = "item1") -> dict:
+    return {
+        "id": item_id,
+        "snippet": {
+            "playlistId": "PL1",
+            "resourceId": {"kind": "youtube#video", "videoId": "dQw4w9WgXcQ"},
+            "position": position,
+        },
+    }
+
+
+def playlist_resource(playlist_id: str = "PL1", **snippet) -> dict:
+    return {
+        "id": playlist_id,
+        "snippet": {"title": "Mix", "description": "Songs", "channelId": CHANNEL_ID, **snippet},
+        "status": {"privacyStatus": "public"},
+        "contentDetails": {"itemCount": 4},
+    }

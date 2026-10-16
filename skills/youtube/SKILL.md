@@ -1,6 +1,6 @@
 ---
 name: youtube
-description: YouTube through the `ytk` CLI. Use for any task that reads YouTube data (search, videos, channels, playlists, comments) or changes the user's own channel (upload, edit metadata, thumbnails, playlists).
+description: YouTube through the `ytk` CLI. Use for any task that reads YouTube data (search, videos, channels, playlists, comments, activity) or changes the user's own channel (upload, edit, delete, thumbnails, playlists).
 ---
 
 # YouTube via `ytk`
@@ -8,12 +8,22 @@ description: YouTube through the `ytk` CLI. Use for any task that reads YouTube 
 `ytk` wraps the YouTube Data API v3. Commands:
 
 ```
-ytk search QUERY                   ytk channel get CHANNEL      ytk channel mine
-ytk video get VIDEO...             ytk video comments VIDEO     ytk video categories
-ytk video upload FILE --title T    ytk video update VIDEO       ytk video thumbnail VIDEO IMAGE
-ytk playlist items PLAYLIST        ytk playlist create TITLE    ytk playlist add PLAYLIST VIDEO
+ytk search QUERY [--since D]
+
+ytk video get VIDEO...             ytk video comments VIDEO         ytk video categories
+ytk video upload FILE --title T    ytk video status VIDEO [--wait]  ytk video update VIDEO
+ytk video thumbnail VIDEO IMAGE    ytk video delete VIDEO
+
+ytk playlist list [CHANNEL]        ytk playlist get PLAYLIST...     ytk playlist items PLAYLIST
+ytk playlist create TITLE          ytk playlist update PLAYLIST     ytk playlist thumbnail PLAYLIST IMAGE
+ytk playlist add PLAYLIST VIDEO    ytk playlist remove PLAYLIST VIDEO
+ytk playlist move PLAYLIST VIDEO --position N                       ytk playlist delete PLAYLIST
+
+ytk channel get CHANNEL            ytk channel mine                 ytk channel activity [CHANNEL]
 ytk auth status | login | logout
 ```
+
+An omitted CHANNEL means the user's own channel.
 
 `ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01` or full ISO datetimes. Options are flags (`--limit 20`); list options repeat (`--tags a --tags b`; `--empty-tags` clears). A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
 
@@ -21,7 +31,7 @@ ytk auth status | login | logout
 
 - stdout: exactly one JSON document, null fields omitted. Pipe it into `jq`.
 - Listings are `{"items": [...], "next_page_token": "..."}`. `--limit N` fetches across pages for you; pass `--page-token` to continue past it.
-- Failure: stdout is empty, stderr is `{"error": {"type", "message"}}`, and the exit code names the type:
+- Failure: stdout is empty, stderr is `{"error": {"type", "message", "details"?}}`, and the exit code names the type:
 
 | exit | type | what to do |
 |---|---|---|
@@ -31,6 +41,19 @@ ytk auth status | login | logout
 | 5 | `quota_exceeded` | stop; quota resets at midnight Pacific Time |
 | 6 | `forbidden` | YouTube refuses (comments disabled, unverified channel for thumbnails, …) |
 | 7 | `network` | retry once |
+| 8 | `confirmation_required` | a delete needs approval: show `details` to the user, and only after they approve run `details.rerun` |
+| 9 | `protected` | the video is past the delete protection limits; stop and give the user `details.studio_url` |
+| 10 | `timeout` | `video status --wait` ran out of time; processing continues, check again later |
+
+## Deletes
+
+`video delete`, `playlist delete` (and later `comment delete`) never delete on the first call: they exit 8 with what would be deleted. Never add `--confirm` on your own initiative; it exists so the user's approval names the exact target. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`, see README).
+
+To make Claude Code ask before every delete, add to `.claude/settings.json`:
+
+```json
+{"permissions": {"ask": ["Bash(ytk video delete:*)", "Bash(ytk playlist delete:*)", "Bash(ytk comment delete:*)"]}}
+```
 
 ## Quota
 
@@ -51,4 +74,4 @@ id=$(ytk video upload clip.mp4 --title "Launch" --publish-at 2026-07-01T15:00:00
 ytk playlist add PLxxxx "$id"
 ```
 
-Account commands (`channel mine`, `video upload/update/thumbnail`, `playlist create/add`) act on the user's real channel: confirm with the user before running them.
+Commands that change things (`video upload/update/thumbnail/delete`, `playlist create/update/thumbnail/add/remove/move/delete`) act on the user's real channel: confirm with the user before running them.

@@ -1,0 +1,168 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Search YouTube for videos, channels, or playlists.\n\nQuota: 100 units per page of up to 50 results.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only results from this channel: UC… ID, @handle, or channel URL."
+      },
+      "kind": {
+        "default": "video",
+        "description": "What to search for.",
+        "enum": [
+          "video",
+          "channel",
+          "playlist"
+        ],
+        "type": "string"
+      },
+      "limit": {
+        "default": 10,
+        "description": "Maximum number of results. Each page of up to 50 costs 100 quota units.",
+        "maximum": 200,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "order": {
+        "default": "relevance",
+        "description": "Sort order.",
+        "enum": [
+          "relevance",
+          "date",
+          "rating",
+          "viewCount",
+          "title"
+        ],
+        "type": "string"
+      },
+      "page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Continue from a previous result's next_page_token."
+      },
+      "query": {
+        "description": "Search terms.",
+        "type": "string"
+      },
+      "since": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only results published at or after this date or datetime, e.g. 2026-01-01."
+      }
+    },
+    "required": [
+      "query"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "items": {
+        "items": {
+          "properties": {
+            "channel_id": {
+              "type": "string"
+            },
+            "channel_title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "enum": [
+                "video",
+                "channel",
+                "playlist"
+              ],
+              "type": "string"
+            },
+            "published_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "title",
+            "description",
+            "channel_id",
+            "channel_title",
+            "published_at",
+            "url"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "next_page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Pass as page_token to continue; null at the end."
+      },
+      "total_results": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Total reported by YouTube; only an estimate for search."
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "type": "object"
+  }
+}

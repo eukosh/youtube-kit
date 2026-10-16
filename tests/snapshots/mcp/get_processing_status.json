@@ -1,0 +1,99 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Whether YouTube has finished processing one of your uploads.\n\nQuota: 1 unit.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "timeout": {
+        "default": 600,
+        "description": "Seconds to wait at most. Callers that can't block for long should wait briefly and check again.",
+        "minimum": 1,
+        "type": "integer"
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      },
+      "wait": {
+        "default": false,
+        "description": "Keep checking every 10 seconds (1 quota unit each, with progress reports) until processing ends.\nIf it hasn't ended within timeout, that's a timeout error, so a script can chain the next step on success.",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "failure_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "parts_processed": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "parts_total": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "status": {
+        "enum": [
+          "processing",
+          "succeeded",
+          "failed",
+          "terminated"
+        ],
+        "type": "string"
+      },
+      "time_left_ms": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "video_id",
+      "status"
+    ],
+    "type": "object"
+  }
+}

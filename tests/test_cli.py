@@ -1,5 +1,6 @@
 """CLI contract: one JSON document on stdout, structured errors on stderr, stable exit codes."""
 
+import io
 import json
 import subprocess
 import sys
@@ -10,7 +11,7 @@ import pytest
 
 from youtube_kit.cli import main
 
-from .fakes import channel_item, http_error, video_item
+from .fakes import channel_item, http_error, playlist_resource, video_item
 
 
 def run(capsys, *argv: str) -> tuple[int, str, str]:
@@ -164,3 +165,73 @@ def test_bool_flags_negate(capsys, api):
 
     assert run(capsys, "video", "update", "dQw4w9WgXcQ", "--no-made-for-kids")[0] == 0
     assert api.oauth.videos().update.call_args.kwargs["body"]["status"]["selfDeclaredMadeForKids"] is False
+
+
+# ---------- guarded deletes ----------
+
+
+@pytest.fixture
+def deletable(api, my_channel):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    return api.oauth.playlists()
+
+
+class Terminal(io.StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
+@pytest.fixture
+def human(monkeypatch):
+    """Call with what a person at a terminal types. Patches at call time, once capsys has replaced stderr."""
+
+    def answer(text: str) -> None:
+        monkeypatch.setattr(sys, "stdin", Terminal(text))
+        monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+
+    return answer
+
+
+def test_agents_get_exit_8_with_the_plan(capsys, deletable):
+    code, out, err = run(capsys, "playlist", "delete", "PL1")
+
+    assert (code, out) == (8, "")
+    error = json.loads(err)["error"]
+    assert error["type"] == "confirmation_required"
+    assert error["details"]["confirm"] == "PL1"
+    assert error["details"]["title"] == "Mix"
+    assert error["details"]["rerun"] == "ytk playlist delete PL1 --confirm PL1"
+    deletable.delete.assert_not_called()
+
+
+def test_agents_confirm_with_the_id(capsys, deletable):
+    code, out, _ = run(capsys, "playlist", "delete", "PL1", "--confirm", "PL1")
+    assert code == 0
+    assert json.loads(out) == {"kind": "playlist", "id": "PL1", "already_gone": False}
+
+
+def test_humans_are_asked_and_their_yes_deletes(capsys, deletable, human):
+    human("y\n")
+
+    code, out, err = run(capsys, "playlist", "delete", "--", "PL1")  # --confirm must land before the --
+
+    assert code == 0
+    assert "About to permanently delete playlist PL1" in err
+    assert "title: Mix" in err
+    assert json.loads(out)["id"] == "PL1"
+    assert deletable.delete.call_args.kwargs == {"id": "PL1"}
+
+
+def test_humans_can_decline(capsys, deletable, human):
+    human("\n")
+    code, out, err = run(capsys, "playlist", "delete", "PL1")
+    assert (code, out) == (1, "")
+    assert "nothing was deleted" in err
+    deletable.delete.assert_not_called()
+
+
+def test_protected_exits_9(capsys, api, my_channel):
+    api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
+    code, _, err = run(capsys, "video", "delete", "dQw4w9WgXcQ")
+    assert code == 9
+    assert json.loads(err)["error"]["details"]["max_views"] == 100

@@ -98,14 +98,56 @@ class Playlist(BaseModel):
     id: str
     url: str
     title: str
+    description: str | None = None
+    channel_id: str | None = None
+    published_at: datetime | None = None
     privacy: Privacy | None = None
+    item_count: int | None = None
 
 
-class PlaylistItemAdded(BaseModel):
+class PlaylistItem(BaseModel):
     playlist_item_id: str
     playlist_id: str
     video_id: str
     position: int
+
+
+class PlaylistRemoval(BaseModel):
+    playlist_id: str
+    video_id: str
+    removed: int = Field(description="How many occurrences were removed; 0 if the video wasn't in the playlist.")
+
+
+class PlaylistImage(BaseModel):
+    playlist_id: str
+    image_id: str
+    width: int | None = None
+    height: int | None = None
+
+
+class Deleted(BaseModel):
+    kind: Literal["video", "playlist", "comment"]
+    id: str
+    already_gone: bool = Field(False, description="Nothing to delete: it didn't exist or was already deleted.")
+
+
+class ProcessingStatus(BaseModel):
+    video_id: str
+    status: Literal["processing", "succeeded", "failed", "terminated"]
+    failure_reason: str | None = None
+    parts_total: int | None = None
+    parts_processed: int | None = None
+    time_left_ms: int | None = None
+
+
+class Activity(BaseModel):
+    type: str
+    published_at: datetime
+    title: str | None = None
+    channel_id: str
+    video_id: str | None = None
+    playlist_id: str | None = Field(None, description="For playlist additions.")
+    target_channel_id: str | None = Field(None, description="For subscriptions and channel shares.")
 
 
 class AuthStatus(BaseModel):

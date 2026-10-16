@@ -1,0 +1,48 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Remove a video from one of your playlists, every time it appears. The video itself is not affected.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "playlist": {
+        "description": "Playlist ID or URL.",
+        "type": "string"
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist",
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "playlist_id": {
+        "type": "string"
+      },
+      "removed": {
+        "description": "How many occurrences were removed; 0 if the video wasn't in the playlist.",
+        "type": "integer"
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist_id",
+      "video_id",
+      "removed"
+    ],
+    "type": "object"
+  }
+}

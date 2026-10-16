@@ -1,22 +1,24 @@
-import mimetypes
+import itertools
 import re
+import time
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 from googleapiclient.http import MediaFileUpload
+from pydantic import Field
 
-from .. import client, parse, progress
-from ..errors import InvalidRequest, NotFound
-from ..models import Privacy, ThumbnailResult, Video, VideoCategory, VideoStats
+from .. import client, guard, parse, progress
+from ..errors import Forbidden, InvalidRequest, NotFound, TimedOut
+from ..models import Deleted, Privacy, ProcessingStatus, ThumbnailResult, Video, VideoCategory, VideoStats
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE
-from ._common import existing_file, to_int, video_url
+from ._common import changes, delete_if_present, existing_file, image_upload, one, pick, to_int, video_url
+from .channels import my_channel_id
 
 # Multiple of 256 KiB (API requirement); small enough to report progress regularly.
 UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024
 UPLOAD_RETRIES = 5
-THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
-_THUMBNAIL_TYPES = {"image/jpeg", "image/png"}
+POLL_SECONDS = 10
 
 
 @operation(quota=1, read_only=True, idempotent=True)
@@ -33,8 +35,7 @@ def get_videos(videos: list[str]) -> list[Video]:
     if not ids:
         raise InvalidRequest("Pass at least one video ID or URL.")
     found: list[Video] = []
-    for start in range(0, len(ids), API_PAGE_SIZE):
-        batch = ids[start : start + API_PAGE_SIZE]
+    for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
         response = (
             client.public().videos().list(part="snippet,contentDetails,statistics,status", id=",".join(batch)).execute()
         )
@@ -131,20 +132,18 @@ def update_video(
     """
     video_id = parse.video_id(video)
     youtube = client.oauth()
-    current = youtube.videos().list(part="snippet,status", id=video_id).execute().get("items", [])
-    if not current:
-        raise NotFound(f"Video {video_id} not found.")
+    current = one(youtube.videos().list(part="snippet,status", id=video_id).execute(), f"Video {video_id} not found.")
     # videos.update replaces whole parts: writable fields left out are reset, read-only ones rejected.
-    snippet = _pick(current[0]["snippet"], _WRITABLE_SNIPPET)
-    status = _pick(current[0]["status"], _WRITABLE_STATUS)
-
-    snippet_changes = {
-        "title": title,
-        "description": description,
-        "tags": None if tags is None else _clean(tags),
-        "categoryId": category_id,
-    }
-    snippet.update({key: value for key, value in snippet_changes.items() if value is not None})
+    snippet = pick(current["snippet"], _WRITABLE_SNIPPET)
+    status = pick(current["status"], _WRITABLE_STATUS)
+    snippet.update(
+        changes(
+            title=title,
+            description=description,
+            tags=None if tags is None else _clean(tags),
+            categoryId=category_id,
+        )
+    )
     if privacy is not None:
         status["privacyStatus"] = privacy
     if made_for_kids is not None:
@@ -177,10 +176,6 @@ def _clean(tags: list[str]) -> list[str]:
     return [tag.strip() for tag in tags if tag.strip()]
 
 
-def _pick(part: dict, keys: tuple[str, ...]) -> dict:
-    return {key: part[key] for key in keys if key in part}
-
-
 @operation(quota=50, destructive=True, idempotent=True, oauth=True)
 def set_thumbnail(video: str, image: Path) -> ThumbnailResult:
     """Set a video's custom thumbnail. The channel must be verified.
@@ -190,17 +185,79 @@ def set_thumbnail(video: str, image: Path) -> ThumbnailResult:
         image: Path to a JPEG or PNG, at most 2 MB.
     """
     video_id = parse.video_id(video)
-    path = existing_file(image)
-    mimetype, _ = mimetypes.guess_type(path)
-    if mimetype not in _THUMBNAIL_TYPES:
-        raise InvalidRequest(f"Thumbnail must be a .jpg or .png file, got {path.name}.")
-    if path.stat().st_size > THUMBNAIL_MAX_BYTES:
-        raise InvalidRequest(f"Thumbnail {path} is larger than 2 MB.")
-    media = MediaFileUpload(str(path), mimetype=mimetype)
+    media = image_upload(image, max_mb=2)
     response = client.oauth().thumbnails().set(videoId=video_id, media_body=media).execute()
     thumbnails = (response.get("items") or [{}])[0]
     best = thumbnails.get("maxres") or thumbnails.get("high") or thumbnails.get("default") or {}
     return ThumbnailResult(video_id=video_id, thumbnail_url=best.get("url"))
+
+
+@operation(quota=51, destructive=True, idempotent=True, oauth=True)
+def delete_video(video: str, *, confirm: str | None = None) -> Deleted:
+    """Permanently delete one of your videos.
+
+    Only recent, little-watched videos can be deleted here: by default at most 100 views and, if public,
+    uploaded within the last 7 days (the limits are set in the toolkit's config file). Anything else must be
+    deleted in YouTube Studio. Without confirm, nothing is deleted and the error describes the video.
+
+    Args:
+        video: Video ID or URL.
+        confirm: The video ID again, passed only after the user has approved deleting this video.
+    """
+    video_id = parse.video_id(video)
+    youtube = client.oauth()
+    items = youtube.videos().list(part="snippet,statistics,status", id=video_id).execute().get("items", [])
+    if not items:
+        return Deleted(kind="video", id=video_id, already_gone=True)
+    target = _video(items[0])
+    if target.channel_id != my_channel_id():
+        raise Forbidden(f"Video {video_id} belongs to another channel.")
+    guard.check_protected(target)
+    plan = {"title": target.title, "url": target.url, "privacy": target.privacy, "views": target.stats.views}
+    guard.require_confirm("video", video_id, confirm, plan)
+    deleted = delete_if_present(youtube.videos().delete(id=video_id))
+    return Deleted(kind="video", id=video_id, already_gone=not deleted)
+
+
+@operation(quota=1, read_only=True, idempotent=True, oauth=True)
+def get_processing_status(
+    video: str, *, wait: bool = False, timeout: Annotated[int, Field(ge=1)] = 600
+) -> ProcessingStatus:
+    """Whether YouTube has finished processing one of your uploads.
+
+    Args:
+        video: Video ID or URL.
+        wait: Keep checking every 10 seconds (1 quota unit each, with progress reports) until processing ends.
+            If it hasn't ended within timeout, that's a timeout error, so a script can chain the next step on success.
+        timeout: Seconds to wait at most. Callers that can't block for long should wait briefly and check again.
+    """
+    video_id = parse.video_id(video)
+    deadline = time.monotonic() + (timeout if wait else 0)
+    status = _processing_status(video_id)
+    while status.status == "processing" and time.monotonic() < deadline:
+        if status.parts_total:
+            progress.report(status.parts_processed or 0, status.parts_total)
+        time.sleep(max(0.0, min(POLL_SECONDS, deadline - time.monotonic())))
+        status = _processing_status(video_id)
+    if wait and status.status == "processing":
+        raise TimedOut(f"Video {video_id} is still processing after {timeout} seconds.", details=status.model_dump())
+    return status
+
+
+def _processing_status(video_id: str) -> ProcessingStatus:
+    response = client.oauth().videos().list(part="processingDetails", id=video_id).execute()
+    details = one(response, f"Video {video_id} not found.").get("processingDetails")
+    if details is None:
+        raise Forbidden(f"Processing status of {video_id} is only visible to the video's owner.")
+    parts = details.get("processingProgress", {})
+    return ProcessingStatus(
+        video_id=video_id,
+        status=details["processingStatus"],
+        failure_reason=details.get("processingFailureReason"),
+        parts_total=to_int(parts.get("partsTotal")),
+        parts_processed=to_int(parts.get("partsProcessed")),
+        time_left_ms=to_int(parts.get("timeLeftMs")),
+    )
 
 
 _DURATION = re.compile(r"^P(?:(?P<d>\d+)D)?(?:T(?:(?P<h>\d+)H)?(?:(?P<m>\d+)M)?(?:(?P<s>\d+)S)?)?$")

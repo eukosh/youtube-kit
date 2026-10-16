@@ -1,0 +1,112 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Videos in a playlist, in playlist order.\n\nTo list everything a channel has uploaded, pass the channel's uploads_playlist_id.\n\nQuota: 1 unit per page of up to 50 results.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "limit": {
+        "default": 25,
+        "description": "Maximum number of entries.",
+        "maximum": 500,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Continue from a previous result's next_page_token."
+      },
+      "playlist": {
+        "description": "Playlist ID or a URL with a list= parameter.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "items": {
+        "items": {
+          "properties": {
+            "position": {
+              "type": "integer"
+            },
+            "published_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "video_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "video_id",
+            "title",
+            "position",
+            "url"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "next_page_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Pass as page_token to continue; null at the end."
+      },
+      "total_results": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Total reported by YouTube; only an estimate for search."
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "type": "object"
+  }
+}

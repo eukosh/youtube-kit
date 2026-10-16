@@ -1,5 +1,6 @@
 """Both adapters expose every core operation, so neither surface silently falls behind."""
 
+import inspect
 from collections.abc import Callable, Iterator
 
 from youtube_kit import core
@@ -24,3 +25,9 @@ def test_every_operation_is_a_cli_command():
 def test_every_operation_is_an_mcp_tool():
     assert set(TOOLS) == set(core.OPERATIONS)
     assert len(TOOLS) == len(core.OPERATIONS)
+
+
+def test_guarded_deletes_are_marked_destructive():
+    guarded = [op for op in core.OPERATIONS if "confirm" in inspect.signature(op).parameters]
+    assert guarded
+    assert all(core.info(op).destructive for op in guarded)

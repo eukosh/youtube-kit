@@ -1,0 +1,63 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Add a video to a playlist on the authorized user's channel.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "playlist": {
+        "description": "Playlist ID or URL.",
+        "type": "string"
+      },
+      "position": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "0-based position in the playlist. Appends to the end when omitted."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist",
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "playlist_id": {
+        "type": "string"
+      },
+      "playlist_item_id": {
+        "type": "string"
+      },
+      "position": {
+        "type": "integer"
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist_item_id",
+      "playlist_id",
+      "video_id",
+      "position"
+    ],
+    "type": "object"
+  }
+}

@@ -2,8 +2,8 @@ import httplib2
 import pytest
 from google.auth.exceptions import RefreshError
 
-from youtube_kit import core
 from youtube_kit.core import errors
+from youtube_kit.core.ops import channels, videos
 
 from .fakes import http_error
 
@@ -40,13 +40,13 @@ def test_exit_codes_are_distinct():
 def test_operations_translate_http_errors(api):
     api.public.videoCategories().list().execute.side_effect = http_error(403, "quotaExceeded")
     with pytest.raises(errors.QuotaExceeded):
-        core.list_video_categories()
+        videos.list_video_categories()
 
 
 def test_operations_translate_refresh_errors(api):
     api.oauth.channels().list().execute.side_effect = RefreshError("invalid_grant")
     with pytest.raises(errors.NotAuthorized, match="ytk auth login"):
-        core.get_my_channel()
+        channels.get_my_channel()
 
 
 def test_invalid_api_key_points_at_the_env_var():
@@ -67,4 +67,4 @@ def test_missing_channel_is_not_an_auth_problem():
 def test_operations_translate_network_errors(api, raised):
     api.public.videoCategories().list().execute.side_effect = raised
     with pytest.raises(errors.NetworkError):
-        core.list_video_categories()
+        videos.list_video_categories()

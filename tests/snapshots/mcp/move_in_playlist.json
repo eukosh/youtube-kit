@@ -1,0 +1,56 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Move a video to another position in one of your playlists.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "playlist": {
+        "description": "Playlist ID or URL.",
+        "type": "string"
+      },
+      "position": {
+        "description": "New 0-based position.",
+        "type": "integer"
+      },
+      "video": {
+        "description": "Video ID or URL. Refused if the video appears in the playlist more than once.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist",
+      "video",
+      "position"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "playlist_id": {
+        "type": "string"
+      },
+      "playlist_item_id": {
+        "type": "string"
+      },
+      "position": {
+        "type": "integer"
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist_item_id",
+      "playlist_id",
+      "video_id",
+      "position"
+    ],
+    "type": "object"
+  }
+}

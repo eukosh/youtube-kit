@@ -1,0 +1,51 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Set a video's custom thumbnail. The channel must be verified.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "image": {
+        "description": "Path to a JPEG or PNG, at most 2 MB.",
+        "format": "path",
+        "type": "string"
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video",
+      "image"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "thumbnail_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "video_id"
+    ],
+    "type": "object"
+  }
+}

@@ -3,6 +3,7 @@ UPDATE_SNAPSHOTS=1 after an intended change or a FastMCP upgrade, and review the
 
 import json
 import os
+import shutil
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -12,9 +13,9 @@ from fastmcp.exceptions import ToolError
 
 from youtube_kit.mcp_server import build_server
 
-from .fakes import http_error
+from .fakes import http_error, playlist_resource
 
-SNAPSHOT = Path(__file__).parent / "snapshots" / "mcp_tools.json"
+SNAPSHOTS = Path(__file__).parent / "snapshots" / "mcp"
 
 pytestmark = pytest.mark.anyio
 
@@ -30,15 +31,20 @@ async def mcp():
         yield connected
 
 
-async def test_tool_surface_matches_snapshot(mcp):
-    tools = [
-        tool.model_dump(mode="json", include={"name", "description", "input_schema", "output_schema", "annotations"})
-        for tool in await mcp.list_tools()
-    ]
+async def test_tool_surface_matches_snapshots(mcp):
+    fields = {"description", "input_schema", "output_schema", "annotations"}
+    tools = {tool.name: tool.model_dump(mode="json", include=fields) for tool in await mcp.list_tools()}
     if os.environ.get("UPDATE_SNAPSHOTS"):
-        SNAPSHOT.parent.mkdir(exist_ok=True)
-        SNAPSHOT.write_text(json.dumps(tools, indent=2, sort_keys=True, ensure_ascii=False) + "\n")
-    assert tools == json.loads(SNAPSHOT.read_text())
+        shutil.rmtree(SNAPSHOTS, ignore_errors=True)
+        SNAPSHOTS.mkdir(parents=True)
+        for name, tool in tools.items():
+            (SNAPSHOTS / f"{name}.json").write_text(
+                json.dumps(tool, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+            )
+    snapshots = {path.stem: json.loads(path.read_text()) for path in SNAPSHOTS.glob("*.json")}
+    assert sorted(tools) == sorted(snapshots)
+    for name, tool in tools.items():
+        assert tool == snapshots[name], f"{name} differs from its snapshot"
 
 
 async def test_domain_errors_reach_the_model(mcp, api):
@@ -83,3 +89,10 @@ async def test_upload_progress_becomes_mcp_notifications(api, tmp_path):
         await mcp.call_tool("upload_video", {"file": str(file), "title": "Hi"})
 
     assert updates == [(500, 1000), (1000, 1000)]
+
+
+async def test_delete_confirmation_reaches_the_model_with_its_plan(mcp, api, my_channel):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    with pytest.raises(ToolError, match=r'"confirm": "PL1"'):
+        await mcp.call_tool("delete_playlist", {"playlist": "PL1"})
+    api.oauth.playlists().delete.assert_not_called()

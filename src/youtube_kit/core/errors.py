@@ -1,16 +1,23 @@
 """Domain errors. Adapters map these to MCP tool errors and CLI exit codes."""
 
 import json
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from googleapiclient.errors import HttpError
 
 
 class YouTubeError(Exception):
-    """Base class. `kind` is a stable machine-readable name; `exit_code` is the CLI status."""
+    """Base class. `kind` is a stable machine-readable name; `exit_code` is the CLI status.
+
+    `details` is optional structured context the caller can act on.
+    """
 
     kind: ClassVar[str] = "error"
     exit_code: ClassVar[int] = 1
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None):
+        super().__init__(message)
+        self.details = details or {}
 
 
 class InvalidRequest(YouTubeError):
@@ -45,6 +52,27 @@ class NetworkError(YouTubeError):
 
     kind = "network"
     exit_code = 7
+
+
+class ConfirmationRequired(YouTubeError):
+    """A guarded delete needs `confirm`; `details` describe the target and the value to pass."""
+
+    kind = "confirmation_required"
+    exit_code = 8
+
+
+class Protected(YouTubeError):
+    """Refused by the delete protection limits. No flag overrides them; only the config file does."""
+
+    kind = "protected"
+    exit_code = 9
+
+
+class TimedOut(YouTubeError):
+    """Waiting for YouTube took longer than allowed. The work may still finish."""
+
+    kind = "timeout"
+    exit_code = 10
 
 
 LOGIN_HINT = "Run `ytk auth login` to authorize your YouTube account."

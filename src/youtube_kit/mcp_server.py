@@ -6,6 +6,7 @@ and progress notifications.
 """
 
 import functools
+import json
 from collections.abc import Callable
 from importlib.metadata import version
 
@@ -24,8 +25,10 @@ Read and manage YouTube through the YouTube Data API v3.
 - Listings return at most `limit` items plus a next_page_token; pass it back as page_token to continue.
 - Every call spends daily API quota (10,000 units by default). search costs 100 units per page, so prefer
   cheaper reads: a channel's uploads_playlist_id with list_playlist_items, then get_videos.
-- Account tools (get_my_channel, upload_video, update_video, set_thumbnail, create_playlist,
-  add_video_to_playlist) need the user to have run `ytk auth login` once.
+- Tools that act on the user's own channel need the user to have run `ytk auth login` once.
+- Deletes are permanent. Called without `confirm`, a delete tool changes nothing and fails with a description
+  of the target. Show that to the user and call again with `confirm` set to the given ID only after they
+  approve. Videos past the delete protection limits can't be deleted here; send the user to YouTube Studio.
 """
 
 # Read-only tools first, so the safe ones lead the list clients show.
@@ -67,7 +70,8 @@ def as_tool[**P, R](operation: Callable[P, R]) -> Callable[P, R]:
             with progress.reporting_to(report):
                 return operation(*args, **kwargs)
         except core.YouTubeError as e:
-            raise ToolError(str(e)) from e
+            details = f" Details: {json.dumps(e.details)}" if e.details else ""
+            raise ToolError(f"{e}{details}") from e
 
     return tool
 

@@ -1,0 +1,66 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Set the custom thumbnail of one of your playlists, replacing any current one.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "image": {
+        "description": "Path to a 16:9 JPEG or PNG, at most 2 MB.",
+        "format": "path",
+        "type": "string"
+      },
+      "playlist": {
+        "description": "Playlist ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "playlist",
+      "image"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "height": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "image_id": {
+        "type": "string"
+      },
+      "playlist_id": {
+        "type": "string"
+      },
+      "width": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "required": [
+      "playlist_id",
+      "image_id"
+    ],
+    "type": "object"
+  }
+}

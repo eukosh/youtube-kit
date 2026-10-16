@@ -25,25 +25,36 @@ Public data (search, videos, channels, playlists, comments) works with an API ke
 2. Public data: create an API key and `export YOUTUBE_API_KEY=...`. Without a key, `ytk` falls back to your OAuth login for public data too.
 3. Your channel: create an OAuth client ID of type *Desktop app* and save its JSON where `ytk auth status` says `client_secrets_file` lives. Then run `ytk auth login` once. It opens a browser and stores a token that the CLI and the MCP server share.
 
-Credentials live in the user config directory (`~/Library/Application Support/youtube-kit/` on macOS). `YOUTUBE_TOKEN_FILE` and `YOUTUBE_CLIENT_SECRETS` override the paths.
+Credentials live in the user config directory (`~/Library/Application Support/youtube-kit/` on macOS). `YOUTUBE_TOKEN_FILE`, `YOUTUBE_CLIENT_SECRETS` and `YOUTUBE_CONFIG_FILE` override the paths.
 
 ## CLI
 
-```
-ytk search QUERY                   ytk channel get CHANNEL      ytk channel mine
-ytk video get VIDEO...             ytk video comments VIDEO     ytk video categories
-ytk video upload FILE --title T    ytk video update VIDEO       ytk video thumbnail VIDEO IMAGE
-ytk playlist items PLAYLIST        ytk playlist create TITLE    ytk playlist add PLAYLIST VIDEO
-ytk auth status | login | logout   ytk mcp
-```
+Commands are `ytk <noun> <verb>` (`video`, `playlist`, `channel`, `auth`), plus `ytk search` and `ytk mcp`. `ytk --help` lists them, and [the skill](skills/youtube/SKILL.md) has the full map.
 
-Every command prints one JSON document on stdout. On failure stdout stays empty, stderr gets `{"error": {"type", "message"}}`, and the exit code tells you what went wrong: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network. Video, channel and playlist arguments accept IDs or pasted URLs; channels also take `@handle`.
+Every command prints one JSON document on stdout. On failure stdout stays empty, stderr gets `{"error": {"type", "message", "details"?}}`, and the exit code tells you what went wrong: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout. Video, channel and playlist arguments accept IDs or pasted URLs; channels also take `@handle`.
 
 To let Claude Code use it, link the skill:
 
 ```sh
 ln -s "$PWD/skills/youtube" ~/.claude/skills/youtube
 ```
+
+## Deleting
+
+Most usage comes through agents, so deletes are guarded:
+
+- **Two steps.** The first call deletes nothing. At a terminal you get a `[y/N]` prompt. An agent gets exit 8 with a description of the target and must re-run with `--confirm <id>`, so approval always names the exact thing being deleted.
+- **Damage limit.** A video with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all; use YouTube Studio. Change the limits in `config.toml` in the config directory (or `YOUTUBE_CONFIG_FILE`):
+
+  ```toml
+  [delete_protection]
+  max_views = 100
+  max_public_age_days = 7
+  ```
+- **Harness approval.** Have your agent ask you before every delete; see the permission snippet in the skill.
+- **Idempotent.** Deleting something already gone succeeds with `"already_gone": true`.
+
+This stops mistakes, not a determined agent: anything holding your OAuth token can call the API directly.
 
 ## MCP server
 

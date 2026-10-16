@@ -1,0 +1,60 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Permanently delete one of your videos.\n\nOnly recent, little-watched videos can be deleted here: by default at most 100 views and, if public,\nuploaded within the last 7 days (the limits are set in the toolkit's config file). Anything else must be\ndeleted in YouTube Studio. Without confirm, nothing is deleted and the error describes the video.\n\nQuota: 51 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "confirm": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The video ID again, passed only after the user has approved deleting this video."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "already_gone": {
+        "default": false,
+        "description": "Nothing to delete: it didn't exist or was already deleted.",
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "video",
+          "playlist",
+          "comment"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "kind",
+      "id"
+    ],
+    "type": "object"
+  }
+}
