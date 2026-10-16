@@ -45,7 +45,7 @@ def get_playlists(playlists: list[str]) -> list[Playlist]:
     """
     ids = unique_ids(playlists, parse.playlist_id, "playlist ID or URL")
     found: list[Playlist] = []
-    for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
+    for batch in itertools.batched(ids, API_PAGE_SIZE):
         request = client.public().playlists().list(part=_PARTS, id=",".join(batch))
         found.extend(_playlist(item) for item in request.execute().get("items", []))
     if not found:

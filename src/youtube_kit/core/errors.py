@@ -114,5 +114,5 @@ def _first_reason(content: bytes) -> str | None:
     try:
         errors = json.loads(content)["error"]["errors"]
         return errors[0]["reason"]
-    except ValueError, KeyError, IndexError, TypeError:
+    except (ValueError, KeyError, IndexError, TypeError):
         return None

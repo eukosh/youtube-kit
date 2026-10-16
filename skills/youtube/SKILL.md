@@ -5,7 +5,7 @@ description: YouTube through the `ytk` CLI. Use for any task that reads YouTube 
 
 # YouTube via `ytk`
 
-`ytk` wraps the YouTube Data API v3. Commands:
+`ytk` wraps the YouTube Data and Analytics APIs. Commands:
 
 ```
 ytk search QUERY [--since D]

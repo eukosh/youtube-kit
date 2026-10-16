@@ -171,7 +171,7 @@ def _moderate(
     ids = unique_ids(comments, parse.comment_id, "comment ID or link")
     youtube = client.oauth()
     extra = {"banAuthor": True} if ban_author else {}  # only valid with rejected
-    for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
+    for batch in itertools.batched(ids, API_PAGE_SIZE):
         youtube.comments().setModerationStatus(
             id=",".join(batch), moderationStatus=_API_STATUS[status], **extra
         ).execute()

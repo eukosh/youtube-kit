@@ -2,8 +2,6 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
-> Note: this repo has no git remote yet. `gh` commands will fail until the GitHub repo is created and added as `origin`.
-
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.

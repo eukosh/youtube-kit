@@ -1,9 +1,27 @@
 [project]
 name = "youtube-kit"
 version = "0.2.0"
-description = "YouTube Data API v3 toolkit: a CLI (ytk) for agents and humans, plus an MCP server built on the same core."
+description = "A CLI (ytk) and MCP server for the YouTube Data and Analytics APIs, built for agents and humans."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Eugene Kosharnyi", email = "eugene.kosharnyi@gmail.com" }]
+keywords = ["youtube", "youtube-data-api", "youtube-analytics", "cli", "mcp", "model-context-protocol", "agents"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
 dependencies = [
     "cyclopts>=4.22,<5",
     "fastmcp>=4.1,<5",
@@ -14,6 +32,12 @@ dependencies = [
     "platformdirs>=4.11",
     "pydantic>=2.13,<3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/eukosh/youtube-kit"
+Documentation = "https://github.com/eukosh/youtube-kit#readme"
+Issues = "https://github.com/eukosh/youtube-kit/issues"
+Changelog = "https://github.com/eukosh/youtube-kit/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ytk = "youtube_kit.cli:main"

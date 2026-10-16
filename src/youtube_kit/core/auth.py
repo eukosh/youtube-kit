@@ -77,7 +77,7 @@ def status(settings: Settings) -> AuthStatus:
     """What credentials are configured. Local check only; makes no network calls."""
     try:
         granted_scopes = json.loads(settings.token_file.read_text()).get("scopes")
-    except OSError, ValueError, AttributeError:
+    except (OSError, ValueError, AttributeError):
         granted_scopes = None
     return AuthStatus(
         api_key_set=settings.api_key is not None,

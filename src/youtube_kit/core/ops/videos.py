@@ -33,7 +33,7 @@ def get_videos(videos: list[str]) -> list[Video]:
     """
     ids = unique_ids(videos, parse.video_id, "video ID or URL")
     found: list[Video] = []
-    for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
+    for batch in itertools.batched(ids, API_PAGE_SIZE):
         response = (
             client.public().videos().list(part="snippet,contentDetails,statistics,status", id=",".join(batch)).execute()
         )
@@ -65,7 +65,7 @@ def get_my_ratings(videos: list[str]) -> list[VideoRating]:
     """
     ids = unique_ids(videos, parse.video_id, "video ID or URL")
     ratings: list[VideoRating] = []
-    for batch in itertools.batched(ids, API_PAGE_SIZE, strict=False):
+    for batch in itertools.batched(ids, API_PAGE_SIZE):
         response = client.oauth().videos().getRating(id=",".join(batch)).execute()
         ratings.extend(
             VideoRating(video_id=item["videoId"], rating=item["rating"] if item["rating"] != "unspecified" else "none")

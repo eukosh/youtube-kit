@@ -4,6 +4,7 @@ import os
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Self
 
 from platformdirs import user_config_path
 
@@ -20,7 +21,7 @@ class Settings:
     config_file: Path
 
     @classmethod
-    def from_env(cls) -> Settings:
+    def from_env(cls) -> Self:
         config_dir = user_config_path(APP_NAME)
         return cls(
             api_key=os.environ.get("YOUTUBE_API_KEY") or None,
@@ -38,7 +39,7 @@ class DeleteProtection:
     max_public_age_days: int = 7
 
     @classmethod
-    def load(cls, config_file: Path) -> DeleteProtection:
+    def load(cls, config_file: Path) -> Self:
         """The [delete_protection] table of the config file; defaults when absent. Bad values are an error."""
         if not config_file.exists():
             return cls()
