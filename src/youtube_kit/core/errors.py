@@ -90,9 +90,11 @@ def from_http_error(error: HttpError) -> YouTubeError:
 
     if reason in _QUOTA_REASONS:
         return QuotaExceeded(f"{message} Daily quota resets at midnight Pacific Time.")
-    # A bad key is a generic 400 badRequest; the specific reason only appears in error details.
+    # A bad key (400) and a missing scope (403) only show their specific reason in the error details.
     if b"API_KEY_INVALID" in error.content:
         return NotAuthorized(f"{message} {API_KEY_HINT}")
+    if b"ACCESS_TOKEN_SCOPE_INSUFFICIENT" in error.content:
+        return NotAuthorized(f"{message} {LOGIN_HINT}")
     if reason == "youtubeSignupRequired":
         return Forbidden(f"{message} The authorized Google account needs a YouTube channel.")
     if status == 401 or reason in _AUTH_REASONS:

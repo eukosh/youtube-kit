@@ -1,3 +1,5 @@
+from datetime import UTC, date, datetime, timedelta
+
 import pytest
 
 from youtube_kit.core import parse
@@ -118,3 +120,16 @@ def test_comment_id(ref, expected):
 def test_comment_id_rejects(ref):
     with pytest.raises(InvalidRequest):
         parse.comment_id(ref)
+
+
+def test_since_takes_relative_spans():
+    assert parse.since("2026-01-01") == "2026-01-01T00:00:00Z"
+    ago = datetime.fromisoformat(parse.since("2w"))
+    assert timedelta(days=13) < datetime.now(UTC) - ago < timedelta(days=15)
+
+
+def test_day():
+    assert parse.day("2026-03-31", ago_from=date(2000, 1, 1)) == date(2026, 3, 31)
+    assert parse.day("10d", ago_from=date(2026, 3, 31)) == date(2026, 3, 21)
+    with pytest.raises(InvalidRequest):
+        parse.day("yesterday", ago_from=date(2026, 3, 31))

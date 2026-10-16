@@ -68,3 +68,13 @@ def test_operations_translate_network_errors(api, raised):
     api.public.videoCategories().list().execute.side_effect = raised
     with pytest.raises(errors.NetworkError):
         videos.list_video_categories()
+
+
+def test_missing_scope_points_at_login():
+    error = errors.from_http_error(
+        http_error(
+            403, "", "Request had insufficient authentication scopes.", details="ACCESS_TOKEN_SCOPE_INSUFFICIENT"
+        )
+    )
+    assert isinstance(error, errors.NotAuthorized)
+    assert "ytk auth login" in str(error)

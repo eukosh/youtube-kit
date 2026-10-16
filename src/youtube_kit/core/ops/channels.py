@@ -40,13 +40,13 @@ def list_activities(
 
     Args:
         channel: UC… channel ID, @handle, or channel URL. Omit for your own channel.
-        since: Only activity at or after this date or datetime.
+        since: Only activity at or after this date or datetime (2026-01-01), or this long ago (90d, 4w).
         limit: Maximum number of activities.
         page_token: Continue from a previous result's next_page_token.
     """
     youtube, selector = owner_or(channel)
     if since:
-        selector["publishedAfter"] = parse.timestamp(since)
+        selector["publishedAfter"] = parse.since(since)
     return collect(
         lambda **page: youtube.activities().list(part="snippet,contentDetails", **selector, **page),
         limit=limit,

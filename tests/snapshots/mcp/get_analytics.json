@@ -1,0 +1,165 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "YouTube Analytics for your channel: totals, or rows broken down by one dimension.\n\nData for the last two or three days is incomplete, so recent rows keep growing. Uses the separate\nYouTube Analytics API and its quota; enable it in the same Google Cloud project.\n\nQuota: no YouTube Data API units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "by": {
+        "anyOf": [
+          {
+            "enum": [
+              "day",
+              "month",
+              "video",
+              "country",
+              "device",
+              "os",
+              "traffic-source",
+              "playback-location",
+              "age",
+              "gender",
+              "subscribed"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Break the numbers down by this dimension; its column is named as given here. Omit for totals.\nBy month, the range widens to whole months."
+      },
+      "limit": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Maximum number of rows. Breaking down by video returns at most 200, 25 by default;\nother breakdowns return every row."
+      },
+      "metrics": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,\nestimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view\nduration, likes, comments, and subscribers gained and lost."
+      },
+      "since": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "First day, inclusive: 2026-01-01, or 90d / 4w before until. Defaults to 28 days before until."
+      },
+      "sort": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Metric or dimension to sort by; prefix with - for descending, e.g. -views."
+      },
+      "until": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Last day, inclusive: 2026-01-31, or 7d / 1w ago. Defaults to today."
+      },
+      "videos": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only these videos (IDs or URLs)."
+      }
+    },
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "columns": {
+        "description": "Dimension first (if any), then the metrics, in request order.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "rows": {
+        "items": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "since": {
+        "format": "date",
+        "type": "string"
+      },
+      "until": {
+        "format": "date",
+        "type": "string"
+      }
+    },
+    "required": [
+      "since",
+      "until",
+      "columns",
+      "rows"
+    ],
+    "type": "object"
+  }
+}

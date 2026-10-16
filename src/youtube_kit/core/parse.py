@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 from urllib.parse import parse_qs, urlparse
 
@@ -13,6 +13,7 @@ _CHANNEL_ID = re.compile(r"^UC[A-Za-z0-9_-]{22}$")
 _COMMENT_ID = re.compile(r"^[A-Za-z0-9_.-]+$")  # YouTube documents no shape; replies are "<parent>.<reply>"
 _VIDEO_PATH_PREFIXES = ("shorts", "embed", "live", "v", "e", "video")  # "video": studio.youtube.com
 _YOUTUBE_DOMAINS = ("youtube.com", "youtube-nocookie.com")
+_AGO = re.compile(r"^(\d+)([dw])$")
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,31 @@ def timestamp(value: str) -> str:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def since(value: str) -> str:
+    """Like `timestamp`, but also takes 90d or 4w for that long ago."""
+    ago = _ago(value)
+    return timestamp(value) if ago is None else (datetime.now(UTC) - ago).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def day(value: str, *, ago_from: date) -> date:
+    """A calendar date from YYYY-MM-DD, or 90d / 4w for that long before `ago_from`."""
+    ago = _ago(value)
+    if ago is not None:
+        return ago_from - ago
+    try:
+        return date.fromisoformat(value.strip())
+    except ValueError:
+        raise InvalidRequest(f"Not a date like 2026-01-31 or 90d: {value!r}") from None
+
+
+def _ago(value: str) -> timedelta | None:
+    match = _AGO.match(value.strip())
+    if match is None:
+        return None
+    count = int(match[1])
+    return timedelta(days=count) if match[2] == "d" else timedelta(weeks=count)
 
 
 def _parse_url(ref: str) -> tuple[str, list[str], dict[str, list[str]]] | None:

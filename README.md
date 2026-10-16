@@ -21,15 +21,15 @@ uv run ytk --help
 
 Public data (search, videos, channels, playlists, comments) works with an API key. Your own channel (uploads, edits, deletes, playlists, comment moderation) needs OAuth.
 
-1. In [Google Cloud Console](https://console.cloud.google.com), create a project and enable **YouTube Data API v3**.
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project and enable **YouTube Data API v3** (and **YouTube Analytics API** for `ytk analytics`).
 2. Public data: create an API key and `export YOUTUBE_API_KEY=...`. Without a key, `ytk` falls back to your OAuth login for public data too.
-3. Your channel: create an OAuth client ID of type *Desktop app* and save its JSON where `ytk auth status` says `client_secrets_file` lives. Then run `ytk auth login` once. It opens a browser and stores a token that the CLI and the MCP server share.
+3. Your channel: create an OAuth client ID of type *Desktop app* and save its JSON where `ytk auth status` says `client_secrets_file` lives. Then run `ytk auth login` once. It opens a browser and stores a token that the CLI and the MCP server share. It asks for YouTube and YouTube Analytics access; if you logged in before analytics existed here, log in again.
 
 Credentials live in the user config directory (`~/Library/Application Support/youtube-kit/` on macOS). `YOUTUBE_TOKEN_FILE`, `YOUTUBE_CLIENT_SECRETS` and `YOUTUBE_CONFIG_FILE` override the paths.
 
 ## CLI
 
-Commands are `ytk <noun> <verb>` (`video`, `playlist`, `comment`, `channel`, `auth`), plus `ytk search` and `ytk mcp`. `ytk --help` lists them, and [the skill](skills/youtube/SKILL.md) has the full map.
+Commands are `ytk <noun> <verb>` (`video`, `playlist`, `comment`, `channel`, `auth`), plus `ytk search`, `ytk analytics` and `ytk mcp`. `ytk --help` lists them, and [the skill](skills/youtube/SKILL.md) has the full map.
 
 Every command prints one JSON document on stdout. On failure stdout stays empty, stderr gets `{"error": {"type", "message", "details"?}}`, and the exit code tells you what went wrong: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout. Video, channel and playlist arguments accept IDs or pasted URLs; channels also take `@handle`.
 

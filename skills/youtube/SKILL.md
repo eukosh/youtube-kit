@@ -9,6 +9,7 @@ description: YouTube through the `ytk` CLI. Use for any task that reads YouTube 
 
 ```
 ytk search QUERY [--since D]
+ytk analytics [--since D] [--until D] [--by day|video|country|device|traffic-source|…] [--metrics M]... [--videos V]...
 
 ytk video get VIDEO...             ytk video categories
 ytk video upload FILE --title T    ytk video status VIDEO [--wait]  ytk video update VIDEO
@@ -30,7 +31,7 @@ ytk auth status | login | logout
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
 
-`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01` or full ISO datetimes. Options are flags (`--limit 20`); list options repeat (`--tags a --tags b`; `--empty-tags` clears). A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
+`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. Options are flags (`--limit 20`); list options repeat (`--tags a --tags b`; `--empty-tags` clears). A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
 
 ## Output contract
 
@@ -42,7 +43,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 |---|---|---|
 | 2 | `invalid_request` / usage | fix the arguments (message says which) |
 | 3 | `not_found` | the ID or handle doesn't exist or isn't visible |
-| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser) or set `YOUTUBE_API_KEY` |
+| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser) or set `YOUTUBE_API_KEY`; also when an older login lacks analytics access |
 | 5 | `quota_exceeded` | stop; quota resets at midnight Pacific Time |
 | 6 | `forbidden` | YouTube refuses (comments disabled, unverified channel for thumbnails, …) |
 | 7 | `network` | retry once |
@@ -67,6 +68,12 @@ The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 
 ## Recipes
 
 ```bash
+# Titles of the 10 most-viewed videos of the last 90 days
+ytk analytics --by video --since 90d --limit 10 | jq -r '.rows[].video' | xargs ytk video get | jq -r '.[].title'
+
+# Daily views and watch time for one video
+ytk analytics --by day --videos VIDEO --metrics views --metrics estimatedMinutesWatched
+
 # Latest 10 uploads of a channel, with view counts
 ytk playlist items "$(ytk channel get @mkbhd | jq -r .uploads_playlist_id)" --limit 10 \
   | jq -r '.items[].video_id' | xargs ytk video get | jq '.[] | {title, views: .stats.views}'

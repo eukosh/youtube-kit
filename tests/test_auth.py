@@ -61,3 +61,46 @@ def test_logout_removes_token():
     write_token(settings.token_file)
     assert not auth.logout(settings).token_present
     assert not auth.logout(settings).token_present  # idempotent
+
+
+def test_status_lists_granted_scopes():
+    settings = Settings.from_env()
+    write_token(settings.token_file)
+    assert auth.status(settings).granted_scopes == [auth.YOUTUBE]
+
+
+def test_login_stores_the_scopes_google_granted(monkeypatch):
+    monkeypatch.delenv("OAUTHLIB_RELAX_TOKEN_SCOPE", raising=False)  # login sets it; undo after the test
+    settings = Settings.from_env()
+    settings.client_secrets_file.write_text("{}")
+    granted = Credentials(token="t", refresh_token="r", scopes=auth.SCOPES, granted_scopes=[auth.YOUTUBE])
+
+    class Flow:
+        @classmethod
+        def from_client_secrets_file(cls, path, scopes):
+            assert scopes == auth.SCOPES
+            return cls()
+
+        def run_local_server(self, **kwargs):
+            return granted
+
+    monkeypatch.setattr(auth, "InstalledAppFlow", Flow)
+
+    assert auth.login(settings).granted_scopes == [auth.YOUTUBE]
+    with pytest.raises(NotAuthorized, match="analytics access"):
+        auth.load_credentials(settings, auth.ANALYTICS)
+
+
+def test_tokens_without_a_scope_list_are_tried():
+    settings = Settings.from_env()
+    write_token(settings.token_file)
+    info = json.loads(settings.token_file.read_text())
+    del info["scopes"]
+    settings.token_file.write_text(json.dumps(info))
+    assert auth.load_credentials(settings, auth.ANALYTICS).token == "access"
+
+
+def test_status_survives_a_corrupt_token():
+    settings = Settings.from_env()
+    settings.token_file.write_text("{not json")
+    assert auth.status(settings).granted_scopes is None

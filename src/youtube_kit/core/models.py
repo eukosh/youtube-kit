@@ -1,6 +1,6 @@
 """Results returned by core operations. Both adapters serialize these as JSON."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -160,6 +160,13 @@ class Activity(BaseModel):
     video_id: str | None = None
     playlist_id: str | None = Field(None, description="For playlist additions.")
     target_channel_id: str | None = Field(None, description="For subscriptions and channel shares.")
+
+
+class AnalyticsReport(BaseModel):
+    since: date
+    until: date
+    columns: list[str] = Field(description="Dimension first (if any), then the metrics, in request order.")
+    rows: list[dict[str, str | int | float]]
 
 
 class AuthStatus(BaseModel):

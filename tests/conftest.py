@@ -25,9 +25,12 @@ def api(monkeypatch):
 
     Operations that use the wrong client get a bare MagicMock back and fail validation.
     """
-    fakes = SimpleNamespace(public=MagicMock(name="public"), oauth=MagicMock(name="oauth"))
+    fakes = SimpleNamespace(
+        public=MagicMock(name="public"), oauth=MagicMock(name="oauth"), analytics=MagicMock(name="analytics")
+    )
     monkeypatch.setattr(client, "public", lambda: fakes.public)
     monkeypatch.setattr(client, "oauth", lambda: fakes.oauth)
+    monkeypatch.setattr(client, "analytics", lambda: fakes.analytics)
     return fakes
 
 

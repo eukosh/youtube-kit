@@ -26,7 +26,7 @@ from . import core
 from .core import auth, progress
 from .core.config import Settings
 from .core.models import AuthStatus
-from .core.ops import channels, comments, playlists, search, videos
+from .core.ops import analytics, channels, comments, playlists, search, videos
 
 app = cyclopts.App(
     name="ytk",
@@ -45,6 +45,7 @@ auth_app = app.command(cyclopts.App(name="auth", help="Authorize access to your 
 _NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
 
 app.command(search.search, name="search")
+app.command(analytics.get_analytics, name="analytics")
 
 video.command(videos.get_videos, name="get")
 video.command(videos.list_video_categories, name="categories")

@@ -26,8 +26,9 @@ def load_credentials(settings: Settings, scope: str = YOUTUBE) -> Credentials:
         raise NotAuthorized(f"No OAuth token at {settings.token_file}. {LOGIN_HINT}")
     info = json.loads(settings.token_file.read_text())
     # The token lists the scopes Google granted; the user may have unticked some, or logged in before
-    # a scope was added. Refreshing asks for exactly these, so a missing one can't be refreshed into.
-    if scope not in info.get("scopes", []):
+    # a scope was added. A refresh can't add scopes; the only fix is logging in again. Tokens from
+    # elsewhere may not list scopes at all; Google then answers for itself.
+    if "scopes" in info and scope not in info["scopes"]:
         access = "analytics" if scope == ANALYTICS else "YouTube"
         raise NotAuthorized(f"Your login doesn't grant {access} access. {LOGIN_HINT} Allow every requested permission.")
     creds = Credentials.from_authorized_user_info(info)
@@ -55,7 +56,7 @@ def login(settings: Settings, *, open_browser: bool = True) -> AuthStatus:
     # prompt=consent: without it Google may omit the refresh token when re-authorizing.
     creds = flow.run_local_server(port=0, open_browser=open_browser, prompt="consent")
     info = json.loads(creds.to_json())
-    info["scopes"] = creds.granted_scopes or SCOPES
+    info["scopes"] = creds.granted_scopes or SCOPES  # Google omits the list when all were granted
     _save_token(settings.token_file, info)
     return status(settings)
 
@@ -68,12 +69,15 @@ def logout(settings: Settings) -> AuthStatus:
 
 def status(settings: Settings) -> AuthStatus:
     """What credentials are configured. Local check only; makes no network calls."""
-    token_present = settings.token_file.exists()
+    try:
+        granted_scopes = json.loads(settings.token_file.read_text()).get("scopes")
+    except OSError, ValueError, AttributeError:
+        granted_scopes = None
     return AuthStatus(
         api_key_set=settings.api_key is not None,
         token_file=str(settings.token_file),
-        token_present=token_present,
-        granted_scopes=json.loads(settings.token_file.read_text()).get("scopes") if token_present else None,
+        token_present=settings.token_file.exists(),
+        granted_scopes=granted_scopes,
         client_secrets_file=str(settings.client_secrets_file),
         client_secrets_present=settings.client_secrets_file.exists(),
     )

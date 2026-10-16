@@ -43,6 +43,8 @@ class OperationInfo:
 
     @property
     def quota_note(self) -> str:
+        if self.quota == 0:
+            return "Quota: no YouTube Data API units."
         units = f"{self.quota} unit{'s' if self.quota != 1 else ''}"
         return f"Quota: {units} per page of up to 50 results." if self.paginated else f"Quota: {units}."
 
