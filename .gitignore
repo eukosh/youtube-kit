@@ -1,0 +1,7 @@
+# OAuth credentials — never commit
+client_secrets.json
+token.json
+
+.venv/
+__pycache__/
+.env

@@ -1,0 +1,40 @@
+[project]
+name = "youtube-kit"
+version = "0.2.0"
+description = "YouTube Data API v3 toolkit: a CLI (ytk) for agents and humans, plus an MCP server built on the same core."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "cyclopts>=4.22,<5",
+    "fastmcp>=4.1,<5",
+    "google-api-python-client>=2.199.0",
+    "google-auth>=2.56",
+    "google-auth-oauthlib>=1.4.0",
+    "httplib2>=0.22",
+    "platformdirs>=4.11",
+    "pydantic>=2.13,<3",
+]
+
+[project.scripts]
+ytk = "youtube_kit.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
+markers = ["live: hits the real YouTube API (needs YOUTUBE_API_KEY)"]
