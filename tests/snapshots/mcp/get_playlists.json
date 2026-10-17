@@ -76,6 +76,18 @@
               ],
               "default": null
             },
+            "language": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Language of the title and description, e.g. en-US."
+            },
             "privacy": {
               "anyOf": [
                 {

@@ -6,14 +6,38 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Upload a video file from disk (resumable, reports progress).\n\nQuota: 1600 units.",
+  "description": "Upload a video file from disk (resumable, reports progress).\n\nCategory and languages left out are copied from your most recent public upload (among your last 150),\nso the video matches the rest of your channel; with none, the category is 22 (People & Blogs).\n\nQuota: 1607 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
+      "ai_content": {
+        "default": false,
+        "description": "Whether AI made realistic content: a real person saying or doing something they didn't,\naltered footage of a real event or place, a realistic scene that didn't happen, or music that's\nthe video's focus. Not for scripts, captions, or obviously unreal content.",
+        "type": "boolean"
+      },
+      "audio_language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language spoken in the video, e.g. en-US."
+      },
       "category_id": {
-        "default": "22",
-        "description": "Category ID (see the video categories listing). 22 is People & Blogs.",
-        "type": "string"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Category ID (see the video categories listing)."
       },
       "description": {
         "default": "",
@@ -24,6 +48,18 @@
         "description": "Path to the local video file.",
         "format": "path",
         "type": "string"
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
       },
       "made_for_kids": {
         "default": false,
@@ -41,6 +77,11 @@
         ],
         "default": null,
         "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
+      "paid_promotion": {
+        "default": false,
+        "description": "Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.",
+        "type": "boolean"
       },
       "privacy": {
         "default": "private",
@@ -92,6 +133,30 @@
   },
   "output_schema": {
     "properties": {
+      "ai_content": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Declared to contain realistic AI-made content, as set by this upload or update. YouTube doesn't report it when reading a video."
+      },
+      "audio_language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language spoken in the video, e.g. en-US."
+      },
       "category_id": {
         "anyOf": [
           {
@@ -160,6 +225,30 @@
       },
       "id": {
         "type": "string"
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
+      },
+      "paid_promotion": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Declared to include paid promotion."
       },
       "privacy": {
         "anyOf": [

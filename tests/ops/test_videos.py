@@ -19,6 +19,8 @@ def test_get_videos_parses_urls_dedupes_and_types_stats(api):
     assert video.duration_seconds == 3723
     assert video.published_at.year == 2026
     assert video.studio_url is None  # not logged in to its channel
+    assert video.paid_promotion is False
+    assert video.ai_content is None  # YouTube doesn't return it on reads
 
 
 def test_get_videos_links_to_studio_only_for_your_channels(api, tmp_path):
@@ -89,6 +91,35 @@ def test_update_video_changes_only_given_fields(api):
     assert result.studio_url == "https://studio.youtube.com/video/dQw4w9WgXcQ/edit"
 
 
+def test_update_video_answers_disclosures_only_when_given(api):
+    api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
+    api.oauth.videos().update().execute.return_value = video_item()
+
+    videos.update_video("dQw4w9WgXcQ", title="New")
+    untouched = api.oauth.videos().update.call_args.kwargs
+    videos.update_video("dQw4w9WgXcQ", paid_promotion=True, ai_content=False, audio_language="uk")
+    answered = api.oauth.videos().update.call_args.kwargs
+
+    assert untouched["part"] == "snippet,status"
+    assert "paidProductPlacementDetails" not in untouched["body"]
+    assert "containsSyntheticMedia" not in untouched["body"]["status"]
+    assert answered["part"] == "snippet,status,paidProductPlacementDetails"
+    assert answered["body"]["paidProductPlacementDetails"] == {"hasPaidProductPlacement": True}
+    assert answered["body"]["status"]["containsSyntheticMedia"] is False
+    assert answered["body"]["snippet"]["defaultAudioLanguage"] == "uk"
+
+
+def test_update_video_keeps_the_video_language(api):
+    current = video_item(snippet={"title": "Old", "defaultAudioLanguage": "uk", "defaultLanguage": "uk"})
+    api.oauth.videos().list().execute.return_value = {"items": [current]}
+    api.oauth.videos().update().execute.return_value = current
+
+    videos.update_video("dQw4w9WgXcQ", title="New")
+
+    snippet = api.oauth.videos().update.call_args.kwargs["body"]["snippet"]
+    assert snippet == {"title": "New", "defaultAudioLanguage": "uk", "defaultLanguage": "uk"}
+
+
 def test_update_video_rejects_schedule_on_public_video(api):
     api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
     with pytest.raises(InvalidRequest, match="private"):
@@ -119,6 +150,81 @@ def test_upload_video_reports_progress(api, tmp_path):
     assert reports == [(400, 1000), (1000, 1000)]
     body = api.oauth.videos().insert.call_args.kwargs["body"]
     assert body["status"]["publishAt"] == "2026-06-01T12:00:00Z"
+    assert body["status"]["containsSyntheticMedia"] is False  # disclosures default to no
+    assert body["paidProductPlacementDetails"] == {"hasPaidProductPlacement": False}
+    assert result.paid_promotion is False  # from what was sent: YouTube's reply leaves it out
+    assert result.ai_content is False
+
+
+def _recent_uploads(api, *videos_):
+    api.oauth.channels().list().execute.return_value = {
+        "items": [{"id": "UC1", "contentDetails": {"relatedPlaylists": {"uploads": "UU1"}}}]
+    }
+    api.oauth.playlistItems().list().execute.return_value = {
+        "items": [{"contentDetails": {"videoId": video["id"]}} for video in videos_]
+    }
+    api.oauth.videos().list().execute.return_value = {"items": list(videos_)}
+
+
+def _upload(api, tmp_path, **kwargs):
+    file = tmp_path / "clip.mp4"
+    file.write_bytes(b"x")
+    api.oauth.videos().insert().next_chunk.return_value = (None, {"id": "NEWVIDEO123"})
+    videos.upload_video(file, title="Hi", **kwargs)
+    return api.oauth.videos().insert.call_args.kwargs["body"]["snippet"]
+
+
+def test_upload_video_copies_category_and_languages_from_recent_public_uploads(api, tmp_path):
+    draft = video_item("draft000000", snippet={"categoryId": "22", "publishedAt": "2026-03-01T00:00:00Z"})
+    draft["status"] = {"privacyStatus": "private"}
+    newest = video_item(
+        "newest00000", snippet={"categoryId": "24", "publishedAt": "2026-02-01T00:00:00Z", "defaultLanguage": "en-US"}
+    )
+    older = video_item(
+        "older000000",
+        snippet={"categoryId": "27", "publishedAt": "2026-01-01T00:00:00Z", "defaultAudioLanguage": "en-GB"},
+    )
+    _recent_uploads(api, older, draft, newest)
+
+    snippet = _upload(api, tmp_path, language="uk")
+
+    assert snippet["categoryId"] == "24"  # the newest public one; the private draft doesn't count
+    assert snippet["defaultLanguage"] == "uk"  # given wins
+    assert snippet["defaultAudioLanguage"] == "en-GB"  # from the newest upload that has one
+
+
+def test_upload_video_looks_past_a_page_of_private_uploads(api, tmp_path):
+    drafts = [video_item(f"draft{i:06d}", status={"privacyStatus": "private"}) for i in range(2)]
+    public = video_item("public00000", snippet={"categoryId": "27", "defaultLanguage": "de"})
+    _recent_uploads(api)
+    api.oauth.playlistItems().list().execute.side_effect = [
+        {"items": [{"contentDetails": {"videoId": d["id"]}} for d in drafts], "nextPageToken": "P2"},
+        {"items": [{"contentDetails": {"videoId": "public00000"}}]},
+    ]
+    api.oauth.videos().list().execute.side_effect = [{"items": drafts}, {"items": [public]}]
+
+    snippet = _upload(api, tmp_path)
+
+    assert snippet["categoryId"] == "27"
+    assert snippet["defaultLanguage"] == "de"
+    assert api.oauth.playlistItems().list.call_args.kwargs["pageToken"] == "P2"
+
+
+def test_upload_video_without_public_uploads_uses_people_and_blogs(api, tmp_path):
+    _recent_uploads(api)
+
+    snippet = _upload(api, tmp_path)
+
+    assert snippet["categoryId"] == "22"
+    assert "defaultLanguage" not in snippet
+
+
+def test_upload_video_given_everything_looks_nothing_up(api, tmp_path):
+    snippet = _upload(api, tmp_path, category_id="28", language="en", audio_language="en")
+
+    assert snippet["categoryId"] == "28"
+    api.oauth.channels().list.assert_not_called()
+    api.oauth.playlistItems().list.assert_not_called()
 
 
 def test_upload_video_validates_before_calling_the_api(api, tmp_path):

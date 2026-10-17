@@ -8,7 +8,7 @@ from ..models import Deleted, Page, Playlist, PlaylistEntry, PlaylistImage, Play
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
 from ._common import changes, delete_if_present, image_upload, one, pick, playlist_url, to_int, unique_ids, video_url
-from .channels import my_channel_id, owner_or
+from .channels import copied_from_recent_uploads, my_channel_id, owner_or
 
 _PARTS = "snippet,status,contentDetails"
 
@@ -82,16 +82,22 @@ def list_playlist_items(
     )
 
 
-@operation(quota=50, oauth=True)
-def create_playlist(title: str, *, description: str = "", privacy: Privacy = "private") -> Playlist:
+@operation(quota=57, oauth=True)  # insert + at most 7 reads in copied_from_recent_uploads
+def create_playlist(
+    title: str, *, description: str = "", language: str | None = None, privacy: Privacy = "private"
+) -> Playlist:
     """Create a playlist on the authorized user's channel.
+
+    Left out, the language is copied from your most recent public upload, as video uploads do.
 
     Args:
         title: Playlist title.
         description: Playlist description.
+        language: Language of the title and description, e.g. en-US.
         privacy: Privacy status.
     """
-    body = {"snippet": {"title": title, "description": description}, "status": {"privacyStatus": privacy}}
+    snippet = {"title": title, "description": description, **copied_from_recent_uploads(defaultLanguage=language)}
+    body = {"snippet": snippet, "status": {"privacyStatus": privacy}}
     return _playlist(client.oauth().playlists().insert(part="snippet,status", body=body).execute())
 
 
@@ -101,6 +107,7 @@ def update_playlist(
     *,
     title: str | None = None,
     description: str | None = None,
+    language: str | None = None,
     privacy: Privacy | None = None,
 ) -> Playlist:
     """Change one of your playlists. Only the fields you pass change.
@@ -109,6 +116,7 @@ def update_playlist(
         playlist: Playlist ID or URL.
         title: New title.
         description: New description.
+        language: Language of the title and description, e.g. en-US.
         privacy: New privacy status.
     """
     playlist_id = parse.playlist_id(playlist)
@@ -120,7 +128,7 @@ def update_playlist(
     body: dict[str, Any] = {
         "id": playlist_id,
         "snippet": pick(current["snippet"], ("title", "description", "defaultLanguage", "tags"))
-        | changes(title=title, description=description),
+        | changes(title=title, description=description, defaultLanguage=language),
     }
     parts = ["snippet"]
     if privacy is not None:
@@ -254,6 +262,7 @@ def _playlist(item: dict) -> Playlist:
         url=playlist_url(item["id"]),
         title=snippet["title"],
         description=snippet.get("description"),
+        language=snippet.get("defaultLanguage"),
         channel_id=snippet.get("channelId"),
         published_at=snippet.get("publishedAt"),
         privacy=item.get("status", {}).get("privacyStatus"),

@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Create a playlist on the authorized user's channel.\n\nQuota: 50 units.",
+  "description": "Create a playlist on the authorized user's channel.\n\nLeft out, the language is copied from your most recent public upload, as video uploads do.\n\nQuota: 57 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
@@ -14,6 +14,18 @@
         "default": "",
         "description": "Playlist description.",
         "type": "string"
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
       },
       "my_channel": {
         "anyOf": [
@@ -84,6 +96,18 @@
           }
         ],
         "default": null
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
       },
       "privacy": {
         "anyOf": [

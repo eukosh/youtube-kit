@@ -25,7 +25,7 @@ from ._common import (
     unique_ids,
     video_url,
 )
-from .channels import my_channel_id
+from .channels import copied_from_recent_uploads, my_channel_id
 
 # Multiple of 256 KiB (API requirement); small enough to report progress regularly.
 UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024
@@ -48,7 +48,10 @@ def get_videos(videos: list[str]) -> list[Video]:
     found: list[Video] = []
     for batch in itertools.batched(ids, API_PAGE_SIZE):
         response = (
-            client.public().videos().list(part="snippet,contentDetails,statistics,status", id=",".join(batch)).execute()
+            client.public()
+            .videos()
+            .list(part="snippet,contentDetails,statistics,status,paidProductPlacementDetails", id=",".join(batch))
+            .execute()
         )
         found.extend(
             _video(item, mine=item.get("snippet", {}).get("channelId") in logged_in)
@@ -105,42 +108,70 @@ def list_video_categories(*, region: str = "US") -> list[VideoCategory]:
     ]
 
 
-@operation(quota=1600, oauth=True)
+@operation(quota=1607, oauth=True)  # upload + at most 7 reads in copied_from_recent_uploads
 def upload_video(
     file: Path,
     *,
     title: str,
     description: str = "",
     tags: list[str] | None = None,
-    category_id: str = "22",
+    category_id: str | None = None,
+    language: str | None = None,
+    audio_language: str | None = None,
     privacy: Privacy = "private",
     publish_at: str | None = None,
     made_for_kids: bool = False,
+    paid_promotion: bool = False,
+    ai_content: bool = False,
 ) -> Video:
     """Upload a video file from disk (resumable, reports progress).
+
+    Category and languages left out are copied from your most recent public upload (among your last 150),
+    so the video matches the rest of your channel; with none, the category is 22 (People & Blogs).
 
     Args:
         file: Path to the local video file.
         title: Video title.
         description: Video description.
         tags: Keyword tags.
-        category_id: Category ID (see the video categories listing). 22 is People & Blogs.
+        category_id: Category ID (see the video categories listing).
+        language: Language of the title and description, e.g. en-US.
+        audio_language: Language spoken in the video, e.g. en-US.
         privacy: Privacy status. Must be private when publish_at is set.
         publish_at: Schedule publication at this date or datetime; YouTube makes the video public then.
         made_for_kids: Whether the video is made for kids (COPPA).
+        paid_promotion: Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.
+        ai_content: Whether AI made realistic content: a real person saying or doing something they didn't,
+            altered footage of a real event or place, a realistic scene that didn't happen, or music that's
+            the video's focus. Not for scripts, captions, or obviously unreal content.
     """
     path = existing_file(file)
-    status: dict[str, Any] = {"privacyStatus": privacy, "selfDeclaredMadeForKids": made_for_kids}
+    status: dict[str, Any] = {
+        "privacyStatus": privacy,
+        "selfDeclaredMadeForKids": made_for_kids,
+        "containsSyntheticMedia": ai_content,
+    }
     if publish_at:
         if privacy != "private":
             raise InvalidRequest("publish_at requires privacy='private'.")
         status["publishAt"] = parse.timestamp(publish_at)
     body = {
-        "snippet": {"title": title, "description": description, "tags": _clean(tags or []), "categoryId": category_id},
+        "snippet": {
+            "title": title,
+            "description": description,
+            "tags": _clean(tags or []),
+            "categoryId": "22",
+            **copied_from_recent_uploads(
+                categoryId=category_id, defaultLanguage=language, defaultAudioLanguage=audio_language
+            ),
+        },
         "status": status,
+        "paidProductPlacementDetails": {"hasPaidProductPlacement": paid_promotion},
     }
     media = MediaFileUpload(str(path), chunksize=UPLOAD_CHUNK_BYTES, resumable=True)
-    request = client.oauth().videos().insert(part="snippet,status", body=body, media_body=media)
+    request = (
+        client.oauth().videos().insert(part="snippet,status,paidProductPlacementDetails", body=body, media_body=media)
+    )
     total = path.stat().st_size
     response = None
     while response is None:
@@ -148,7 +179,8 @@ def upload_video(
         if chunk is not None:
             progress.report(chunk.resumable_progress, total)
     progress.report(total, total)
-    return _video(response, mine=True)
+    # YouTube's reply leaves out paidProductPlacementDetails even though it applied it.
+    return _video(response, mine=True).model_copy(update={"paid_promotion": paid_promotion, "ai_content": ai_content})
 
 
 @operation(quota=51, destructive=True, idempotent=True, oauth=True)
@@ -159,9 +191,13 @@ def update_video(
     description: str | None = None,
     tags: list[str] | None = None,
     category_id: str | None = None,
+    language: str | None = None,
+    audio_language: str | None = None,
     privacy: Privacy | None = None,
     publish_at: str | None = None,
     made_for_kids: bool | None = None,
+    paid_promotion: bool | None = None,
+    ai_content: bool | None = None,
 ) -> Video:
     """Change a video's metadata. Only the fields you pass change; the rest keep their values.
 
@@ -171,9 +207,15 @@ def update_video(
         description: New description.
         tags: New tags, replacing the current ones. An empty list removes all tags.
         category_id: New category ID (see the video categories listing).
+        language: Language of the title and description, e.g. en-US.
+        audio_language: Language spoken in the video, e.g. en-US.
         privacy: New privacy status. Making a scheduled video public or unlisted cancels the schedule.
         publish_at: Schedule publication at this date or datetime. The video must end up private.
         made_for_kids: Whether the video is made for kids (COPPA).
+        paid_promotion: Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.
+        ai_content: Whether AI made realistic content: a real person saying or doing something they didn't,
+            altered footage of a real event or place, a realistic scene that didn't happen, or music that's
+            the video's focus. Not for scripts, captions, or obviously unreal content.
     """
     video_id = parse.video_id(video)
     youtube = client.oauth()
@@ -187,12 +229,16 @@ def update_video(
             description=description,
             tags=None if tags is None else _clean(tags),
             categoryId=category_id,
+            defaultLanguage=language,
+            defaultAudioLanguage=audio_language,
         )
     )
     if privacy is not None:
         status["privacyStatus"] = privacy
     if made_for_kids is not None:
         status["selfDeclaredMadeForKids"] = made_for_kids
+    if ai_content is not None:
+        status["containsSyntheticMedia"] = ai_content
     if publish_at is not None:
         if status["privacyStatus"] != "private":
             raise InvalidRequest("publish_at requires the video to be private.")
@@ -202,10 +248,15 @@ def update_video(
         status.pop("publishAt", None)
 
     body = {"id": video_id, "snippet": snippet, "status": status}
-    return _video(youtube.videos().update(part="snippet,status", body=body).execute(), mine=True)
+    parts = "snippet,status"
+    # Sent only when asked: YouTube reports an unanswered question as false, and writing that back answers it.
+    if paid_promotion is not None:
+        body["paidProductPlacementDetails"] = {"hasPaidProductPlacement": paid_promotion}
+        parts += ",paidProductPlacementDetails"
+    return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
 
 
-_WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage")
+_WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")
 _WRITABLE_STATUS = (
     "privacyStatus",
     "publishAt",
@@ -335,6 +386,8 @@ def _video(item: dict, *, mine: bool = False) -> Video:
         published_at=snippet.get("publishedAt"),
         tags=snippet.get("tags"),
         category_id=snippet.get("categoryId"),
+        language=snippet.get("defaultLanguage"),
+        audio_language=snippet.get("defaultAudioLanguage"),
         duration=details.get("duration"),
         duration_seconds=_duration_seconds(details.get("duration")),
         stats=None
@@ -346,4 +399,6 @@ def _video(item: dict, *, mine: bool = False) -> Video:
         ),
         privacy=status.get("privacyStatus"),
         publish_at=status.get("publishAt"),
+        paid_promotion=item.get("paidProductPlacementDetails", {}).get("hasPaidProductPlacement"),
+        ai_content=status.get("containsSyntheticMedia"),
     )

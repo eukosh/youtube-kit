@@ -47,11 +47,19 @@ class Video(BaseModel):
     published_at: datetime | None = None
     tags: list[str] | None = None
     category_id: str | None = None
+    language: str | None = Field(None, description="Language of the title and description, e.g. en-US.")
+    audio_language: str | None = Field(None, description="Language spoken in the video, e.g. en-US.")
     duration: str | None = None
     duration_seconds: int | None = None
     stats: VideoStats | None = None
     privacy: Privacy | None = None
     publish_at: datetime | None = None
+    paid_promotion: bool | None = Field(None, description="Declared to include paid promotion.")
+    ai_content: bool | None = Field(
+        None,
+        description="Declared to contain realistic AI-made content, as set by this upload or update. "
+        "YouTube doesn't report it when reading a video.",
+    )
 
 
 class ChannelStats(BaseModel):
@@ -115,6 +123,7 @@ class Playlist(BaseModel):
     url: str
     title: str
     description: str | None = None
+    language: str | None = Field(None, description="Language of the title and description, e.g. en-US.")
     channel_id: str | None = None
     published_at: datetime | None = None
     privacy: Privacy | None = None

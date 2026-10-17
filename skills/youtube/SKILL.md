@@ -80,11 +80,13 @@ Commands that change things (`video upload/update/thumbnail/rate/delete`, `playl
 
 After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards, subtitles). `studio_url` is set only for videos on channels the user is logged in to here.
 
+What `video upload` sets when a flag is left out: category and both languages are copied from the channel's most recent public upload (`--category-id`, `--language`, `--audio-language` override), and YouTube's paid promotion and AI use disclosures are answered no (`--paid-promotion`, `--ai-content`; `--help` says what counts). `playlist create` copies the title and description language the same way (`--language` overrides). The user's own instructions, such as per-channel categories or languages, take precedence over these defaults.
+
 `video delete`, `playlist delete` and `comment delete` exit 8 on the first call with what would be deleted. `--confirm` carries the user's yes for that exact target: show `details` to the user, and after they approve run `details.rerun`. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 
 ## Quota
 
-The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` 1600 (each command's `--help` states its cost). Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` uses the separate Analytics API quota. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
+The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` about 1600 (each command's `--help` states its cost). Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` uses the separate Analytics API quota. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
 
 ## Recipes
 

@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from typing import Any
 
 from googleapiclient.discovery import Resource
@@ -6,7 +7,7 @@ from .. import auth, client, parse
 from ..config import Settings
 from ..models import Activity, Channel, ChannelStats, MyChannel, Page
 from ..operation import operation
-from ..pagination import Limit, collect
+from ..pagination import API_PAGE_SIZE, Limit, collect
 from ._common import channel_url, one, to_int
 
 _LOOKUP_PARAM = {"id": "id", "handle": "forHandle", "username": "forUsername"}
@@ -71,6 +72,52 @@ def resolve_channel_id(channel: str) -> str:
 def my_channel_id() -> str:
     """The authorized user's channel ID, for ownership checks."""
     return one(client.oauth().channels().list(part="id", mine=True).execute(), "You have no YouTube channel.")["id"]
+
+
+def my_uploads_playlist_id() -> str:
+    """The authorized user's uploads playlist: every video on the channel, newest first."""
+    response = client.oauth().channels().list(part="contentDetails", mine=True).execute()
+    return one(response, "You have no YouTube channel.")["contentDetails"]["relatedPlaylists"]["uploads"]
+
+
+# How many pages of the uploads playlist to search for a public video to copy settings from.
+RECENT_UPLOAD_PAGES = 3
+
+
+def copied_from_recent_uploads(**given: str | None) -> dict[str, str]:
+    """The given snippet fields, with any left out copied from the newest public upload that has them.
+
+    Stands in for Studio's upload defaults, which YouTube doesn't apply to API uploads.
+    """
+    chosen = {key: value for key, value in given.items() if value is not None}
+    if len(chosen) < len(given):
+        for snippet in _recent_public_snippets():
+            for key in given.keys() - chosen.keys():
+                if snippet.get(key):
+                    chosen[key] = snippet[key]
+            if len(chosen) == len(given):
+                break
+    return chosen
+
+
+def _recent_public_snippets() -> Iterator[dict]:
+    """Snippets of the user's public uploads, newest first, among the last RECENT_UPLOAD_PAGES pages."""
+    youtube = client.oauth()
+    request: dict[str, Any] = {
+        "part": "contentDetails",
+        "playlistId": my_uploads_playlist_id(),
+        "maxResults": API_PAGE_SIZE,
+    }
+    for _ in range(RECENT_UPLOAD_PAGES):
+        page = youtube.playlistItems().list(**request).execute()
+        ids = [entry["contentDetails"]["videoId"] for entry in page.get("items", [])]
+        if ids:
+            found = youtube.videos().list(part="snippet,status", id=",".join(ids)).execute().get("items", [])
+            public = [video["snippet"] for video in found if video.get("status", {}).get("privacyStatus") == "public"]
+            yield from sorted(public, key=lambda snippet: snippet.get("publishedAt", ""), reverse=True)
+        if not page.get("nextPageToken"):
+            return
+        request["pageToken"] = page["nextPageToken"]
 
 
 def owner_or(channel: str | None) -> tuple[Resource, dict[str, Any]]:

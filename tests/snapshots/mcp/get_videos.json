@@ -40,6 +40,30 @@
       "result": {
         "items": {
           "properties": {
+            "ai_content": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Declared to contain realistic AI-made content, as set by this upload or update. YouTube doesn't report it when reading a video."
+            },
+            "audio_language": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Language spoken in the video, e.g. en-US."
+            },
             "category_id": {
               "anyOf": [
                 {
@@ -108,6 +132,30 @@
             },
             "id": {
               "type": "string"
+            },
+            "language": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Language of the title and description, e.g. en-US."
+            },
+            "paid_promotion": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Declared to include paid promotion."
             },
             "privacy": {
               "anyOf": [
