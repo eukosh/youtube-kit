@@ -12,3 +12,6 @@ dist/
 .ruff_cache/
 *.egg-info/
 .DS_Store
+
+# Demo recording intermediates
+docs/demo/out/

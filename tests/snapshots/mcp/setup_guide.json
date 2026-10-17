@@ -1,0 +1,154 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "What is left before the user's channel can be used: a one-time Google Cloud setup, then a Google sign-in.\n\nThe steps happen in the user's browser, so walk them through one step at a time. Once ready, running\nthe sign-in again connects another channel.\n\nQuota: no YouTube Data API units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "project": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Google Cloud project ID, once known. The links then open with that project selected."
+      }
+    },
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "channels": {
+        "items": {
+          "properties": {
+            "analytics": {
+              "description": "The login grants analytics access.",
+              "type": "boolean"
+            },
+            "default": {
+              "description": "Operations work on this channel unless told to use another.",
+              "type": "boolean"
+            },
+            "handle": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "url",
+            "default",
+            "analytics"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "ready": {
+        "description": "At least one channel is logged in.",
+        "type": "boolean"
+      },
+      "steps": {
+        "description": "What is left to do, in order. Empty when ready.",
+        "items": {
+          "properties": {
+            "gcloud": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Shell command that does this step instead, if the gcloud CLI is installed and signed in."
+            },
+            "tasks": {
+              "items": {
+                "properties": {
+                  "do": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "The page to do it on."
+                  },
+                  "values": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "What to enter, by field label."
+                  }
+                },
+                "required": [
+                  "do"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "tasks"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "ready",
+      "channels",
+      "steps"
+    ],
+    "type": "object"
+  }
+}

@@ -6,7 +6,9 @@ Google binds a token to the single channel picked on the consent screen, so each
 
 import json
 import os
+import shlex
 import tempfile
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -28,6 +30,8 @@ YOUTUBE = "https://www.googleapis.com/auth/youtube.force-ssl"
 # YouTube Analytics reports, revenue included.
 ANALYTICS = "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
 SCOPES = [YOUTUBE, ANALYTICS]
+
+NO_CLIENT = "No OAuth client set up yet. Run `ytk auth login` in a terminal; it walks you through creating one."
 
 _DEFAULT_FILE = "default"  # in token_dir; holds the default channel's ID
 
@@ -99,23 +103,65 @@ def load_credentials(path: Path, scope: str = YOUTUBE) -> Credentials:
     return creds
 
 
-def login(settings: Settings, *, open_browser: bool = True) -> AuthStatus:
-    """Run the installed-app OAuth flow and store the token under the channel picked. Prints the auth URL to stdout.
-
-    The first channel logged in becomes the default.
-    """
-    if not settings.client_secrets_file.exists():
-        raise NotAuthorized(
-            f"OAuth client secrets not found at {settings.client_secrets_file}. "
-            "In Google Cloud Console, enable YouTube Data API v3, create an OAuth client ID "
-            "of type 'Desktop app', and save its JSON to that path "
-            "(or point YOUTUBE_CLIENT_SECRETS at it)."
+def save_client_secrets(settings: Settings, source: str) -> None:
+    """Store an OAuth client from its downloaded JSON: a file path (quoted or drag-and-dropped) or the contents."""
+    text = source.strip()
+    if not text.startswith("{"):
+        try:
+            parts = shlex.split(text)
+        except ValueError:
+            parts = []
+        path = Path(parts[0] if len(parts) == 1 else text).expanduser()
+        try:
+            text = path.read_text()
+        except OSError as e:
+            raise InvalidRequest(f"Can't read {path}: {e.strerror or e}.") from e
+    try:
+        data = json.loads(text)
+    except ValueError:
+        raise InvalidRequest("That isn't the JSON file Google gave you for the OAuth client.") from None
+    if isinstance(data, dict) and "web" in data:
+        raise InvalidRequest("That's a Web application client. Create an OAuth client of type Desktop app instead.")
+    installed = data.get("installed") if isinstance(data, dict) else None
+    if not isinstance(installed, dict) or not installed.get("client_id") or not installed.get("client_secret"):
+        raise InvalidRequest(
+            "That isn't an OAuth client JSON. Download it from the OAuth client's page in Google Cloud."
         )
+    _write_atomic(settings.client_secrets_file, json.dumps(data))
+
+
+def downloaded_client_secrets(downloads: Path | None = None) -> Path | None:
+    """The newest OAuth client JSON downloaded in the last day, if any; Google names them client_secret_*.json."""
+    folder = downloads or Path.home() / "Downloads"
+    try:
+        candidates = [path for path in folder.glob("client_secret_*.json") if path.is_file()]
+    except OSError:
+        return None
+    recent = [path for path in candidates if time.time() - path.stat().st_mtime < 86_400]  # a day
+    return max(recent, key=lambda path: path.stat().st_mtime, default=None)
+
+
+def login(settings: Settings, *, open_browser: bool = True) -> MyChannel:
+    """Authorize a channel at Google and store its token. Returns that channel; the first one becomes the default."""
+    return connect(settings, authorize(settings, open_browser=open_browser))
+
+
+def authorize(settings: Settings, *, open_browser: bool = True) -> Credentials:
+    """Run Google's consent flow in the browser for the channel the user picks. Prints the auth URL to stdout."""
+    if not settings.client_secrets_file.exists():
+        raise NotAuthorized(NO_CLIENT)
     # Google lets users untick scopes; without this, oauthlib raises instead of returning what was granted.
     os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
     flow = InstalledAppFlow.from_client_secrets_file(str(settings.client_secrets_file), SCOPES)
     # prompt=consent: without it Google may omit the refresh token when re-authorizing.
-    creds = flow.run_local_server(port=0, open_browser=open_browser, prompt="consent")
+    return flow.run_local_server(port=0, open_browser=open_browser, prompt="consent")
+
+
+def connect(settings: Settings, creds: Credentials) -> MyChannel:
+    """Look up which channel fresh credentials belong to and store them under it.
+
+    Separate from `authorize` so a failure here (YouTube Data API not enabled yet) can be retried without consenting again.
+    """
     info = json.loads(creds.to_json())
     info["scopes"] = creds.granted_scopes or SCOPES  # Google omits the list when all were granted
     info["channel"] = _identify(creds)
@@ -123,7 +169,7 @@ def login(settings: Settings, *, open_browser: bool = True) -> AuthStatus:
     _write_atomic(settings.token_dir / f"{channel_id}.json", json.dumps(info))
     if _stored_default(settings) not in _logins(settings):
         _save_default(settings, channel_id)
-    return status(settings)
+    return next(channel for channel in my_channels(settings) if channel.id == channel_id)
 
 
 def switch(settings: Settings, channel: str) -> AuthStatus:
@@ -260,7 +306,7 @@ def _identify(creds: Credentials) -> dict:
 def _write_atomic(path: Path, text: str) -> None:
     # Atomic replace: a running MCP server may read or refresh while the CLI writes.
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".token-", suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}-", suffix=".tmp")
     try:
         with os.fdopen(fd, "w") as f:
             f.write(text)

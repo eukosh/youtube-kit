@@ -5,64 +5,112 @@
 [![Python](https://img.shields.io/pypi/pyversions/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/eukosh/youtube-kit/blob/main/LICENSE)
 
-Most YouTube CLIs and MCP servers do one thing. They upload, or they pull analytics, or they search and stop there. `ytk` does 44 things, which is most of what the YouTube Data and Analytics APIs allow for a channel, and it prints JSON. `ytk mcp` serves the same 44 operations to MCP clients.
+YouTube CLI (`ytk`) and MCP server, built for agents and humans. Let Claude Code, Codex, Cursor, Claude Desktop or ChatGPT work on your channel: analytics, uploads, metadata, playlists and comment moderation. It handles several channels, and you can run the same commands in your own terminal.
+
+![Claude Code answering "what were my top 3 videos in the last 28 days?" with ytk](https://raw.githubusercontent.com/eukosh/youtube-kit/main/docs/demo/agent.gif)
+
+## Quick start
 
 ```sh
-ytk channel get @mkbhd | jq '{title, subscribers: .stats.subscribers}'
-ytk analytics --by video --since 90d --limit 5     # your top videos of the last 90 days
-ytk comment list --status held                     # comments waiting for review on your channel
+uv tool install youtube-kit
+ytk auth login      # one-time Google Cloud setup, then pick your channel
 ```
+
+You need a Google account with a YouTube channel, and [uv](https://docs.astral.sh/uv/getting-started/installation/) (`brew install uv` on macOS). The first `ytk auth login` takes about 5 minutes: it opens each Google Cloud page, says what to click and picks up the file you download.
+
+```sh
+ytk analytics --by video --since 90d --limit 5     # your top videos of the last 90 days
+ytk comment list --status held                     # comments waiting for review
+ytk channel get @mkbhd | jq .stats                 # any public channel
+```
+
+![ytk commands piping JSON into jq](https://raw.githubusercontent.com/eukosh/youtube-kit/main/docs/demo/commands.gif)
+
+Or ask your agent: *"Which of my videos got the most views this month, and are any comments waiting for review?"*
+
+## Use it from your agent
+
+### Skill: Claude Code, Codex, Cursor and other shell agents
+
+A short skill teaches the agent the CLI. It loads only when a YouTube task comes up.
+
+```sh
+claude plugin install youtube-kit --marketplace eukosh/youtube-kit   # Claude Code
+codex plugin marketplace add eukosh/youtube-kit                      # Codex, then:
+codex plugin add youtube-kit@youtube-kit
+npx skills add eukosh/youtube-kit -g                                 # Cursor and others
+```
+
+The plugins follow `ytk` releases. Codex updates them at startup; Claude Code does once you turn on auto-update under `/plugin` → Marketplaces. With `npx skills`, run `npx skills update`.
+
+### MCP: Claude Desktop, ChatGPT and other MCP clients
+
+`ytk mcp` serves the same operations as tools. In Claude Code:
+
+```sh
+claude mcp add youtube -- uvx --from youtube-kit ytk mcp
+```
+
+In clients configured with JSON (Claude Desktop, Cursor and others):
+
+```json
+{
+  "mcpServers": {
+    "youtube": { "command": "uvx", "args": ["--from", "youtube-kit", "ytk", "mcp"] }
+  }
+}
+```
+
+In the ChatGPT desktop app: Settings → MCP servers → Add server → STDIO, with the command `uvx --from youtube-kit ytk mcp`. Codex shares that setting (`codex mcp add youtube -- uvx --from youtube-kit ytk mcp`).
+
+The server uses your `ytk auth login` logins. Not set up yet? The model can walk you through it with the `setup_guide` tool.
 
 ## What it covers
 
 | Area | Operations |
 |---|---|
-| Search | videos, channels and playlists, filtered by channel or date |
-| Videos | get, categories, upload (resumable, with progress), update metadata, set thumbnail, wait for processing, like or dislike, check your rating, delete |
-| Playlists | list, get, items, create, update, set image, add, remove, move, delete |
-| Comments | list (published, held for review, likely spam, rejected), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
-| Channel | get, recent activity, your logged-in channels (several at once), about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
-| Subscriptions | list, subscribe, unsubscribe |
 | Analytics | totals, or breakdowns by day, month, video, country, device, OS, traffic source, playback location, age, gender or subscribed status |
+| Videos | get, categories, upload (resumable, with progress), update metadata, set thumbnail, wait for processing, like or dislike, check your rating, delete |
+| Comments | list (published, held for review, likely spam, rejected), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
+| Playlists | list, get, items, create, update, set image, add, remove, move, delete |
+| Channel | get, recent activity, your logged-in channels, about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
+| Search | videos, channels and playlists, filtered by channel or date |
+| Subscriptions | list, subscribe, unsubscribe |
 
-Not covered: captions, localizations, live streaming and channel memberships. `ytk --help` lists every command, and the [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md) fits them all on one page with `jq` recipes.
+Not covered: captions, localizations, live streaming and channel memberships. `ytk --help` lists every command, and the [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md) fits them on one page with `jq` recipes.
 
-A few decisions you'll notice once a script or an agent drives it:
+## Channels and login
 
-- One JSON document on stdout, a JSON error on stderr, and an exit code per failure type. `jq` and agents branch on the code instead of parsing messages.
-- The CLI and the MCP server are thin adapters over one core, and a test fails if either misses an operation. The two never disagree about what exists.
-- Deleting takes two calls, and the second must name the exact target. Videos past 100 views or a week of being public can't be deleted here at all. See [Deleting](#deleting).
-- Each command's `--help` and each MCP tool description states its quota cost, so you know what a loop will burn before you run it.
-- Arguments take IDs or pasted YouTube URLs, channels also take an `@handle`, and `--since` takes dates or spans like `90d`.
-
-## Install
-
-`ytk` installs as a global command in its own isolated environment, with [uv](https://docs.astral.sh/uv/):
+`ytk auth login` connects one channel. Run it again for each of your other channels, including brand channels: pick the one you want when Google asks.
 
 ```sh
-uv tool install youtube-kit
-ytk --help
+ytk channel mine                                           # your channels; one is the default
+ytk auth switch @second                                    # change the default
+ytk video upload clip.mp4 --title Hi --my-channel @third   # use another channel for one command
+ytk auth logout @third
 ```
 
-No uv yet? Install it with `brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`. uv fetches a suitable Python by itself.
+Commands work on the default channel unless `--my-channel` names another. MCP tools take `my_channel` the same way, so you can say "upload this to my gaming channel". `YOUTUBE_CHANNEL` sets the default for one shell or one MCP server.
 
-- Upgrade with `uv tool upgrade youtube-kit`, and remove with `uv tool uninstall youtube-kit`.
-- With pipx instead: `pipx install youtube-kit` (needs Python 3.12 or newer).
-- To try it without installing: `uvx --from youtube-kit ytk --help`.
+**Why your own Google Cloud client.** YouTube's daily quota of 10,000 units belongs to a Cloud project. A client shipped inside `ytk` would split one quota among all its users. Yours is shared by your channels only.
 
-## Credentials
+**Let an agent set it up.** `ytk auth guide` (`setup_guide` over MCP) lists what's left, with links and the values to enter. With the gcloud CLI signed in, the agent can create the project and enable the APIs for you. The rest needs your browser. Already have the client JSON? Run `ytk auth login --client-secrets FILE`.
 
-Public data (search, videos, channels, playlists, comments) works with an API key. Anything on your own channel (uploads, edits, deletes, comment moderation, branding, subscriptions, ratings, analytics) needs an OAuth login.
+![The guided ytk auth login setup](https://raw.githubusercontent.com/eukosh/youtube-kit/main/docs/demo/login.gif)
 
-1. In the [Google Cloud Console](https://console.cloud.google.com), create a project and enable **YouTube Data API v3**, plus **YouTube Analytics API** for `ytk analytics`.
-2. For public data, create an **API key** and `export YOUTUBE_API_KEY=...`. Without a key, `ytk` uses your OAuth login for public data too.
-3. For your own channel, set up **OAuth**:
-   1. Configure the OAuth consent screen (user type *External*) and add your Google account as a test user.
-   2. Create an OAuth client ID of type *Desktop app*, download its JSON, and save it where `ytk auth status` says `client_secrets_file` lives.
-   3. Run `ytk auth login`. It opens a browser, asks which channel to authorize, and stores a token that the CLI and the MCP server share. Run it again for each further channel (see [Several channels](#several-channels)).
+<details>
+<summary>Manual setup, files and environment variables</summary>
 
-> [!NOTE]
-> While the consent screen is in *Testing* status, Google expires the login after 7 days and you need to run `ytk auth login` again. To keep it, set the publishing status to *In production*. Google then shows an "unverified app" warning at login, which is expected for your own client. Continue past it.
+The guided setup does this:
+
+1. In the [Google Cloud Console](https://console.cloud.google.com), create a project and enable **YouTube Data API v3** and **YouTube Analytics API**.
+2. In **Google Auth Platform**, click *Get started* (audience *External*). On *Branding*, fill in the home page (`https://github.com/eukosh/youtube-kit`), the privacy policy link (`https://github.com/eukosh/youtube-kit/blob/main/PRIVACY.md`) and the authorized domain `github.com`; Google won't publish without them. Then on *Audience* click *Publish app*. While the app is in *Testing*, only listed test users can sign in and Google logs them out after 7 days.
+3. Under *Clients*, create a client of type *Desktop app* and download its JSON.
+4. `ytk auth login --client-secrets path/to/client_secret.json`. Google warns that it hasn't verified the app: it's your own, so click *Advanced*, then *Go to ytk (unsafe)*.
+
+Public data (search, videos, channels, playlists, comments) also works with just an API key: create one in the same project and `export YOUTUBE_API_KEY=...`, or put it in the MCP server's `env`. Without a key, `ytk` reads public data through your login.
+
+`ytk` remembers each channel's handle from when you logged in. After renaming a channel on YouTube, name it by its UC… ID or run `ytk auth login` for it again.
 
 Credentials and `config.toml` live in the user config directory (`~/Library/Application Support/youtube-kit/` on macOS, `~/.config/youtube-kit/` on Linux). `ytk auth status` prints the exact paths. These environment variables override them:
 
@@ -74,67 +122,15 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 | `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID or @handle), overriding `ytk auth switch` |
 | `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits) |
 
-### Several channels
+</details>
 
-A Google login authorizes one channel, so each channel you manage gets its own `ytk auth login`. That includes brand-account channels under the same Google account: pick the channel when Google asks which account to use. The OAuth client and API key stay the same for all of them.
+## Built for agents
 
-```sh
-ytk auth login                            # once per channel
-ytk channel mine                          # logged-in channels; one is marked "default": true
-ytk auth switch @second                   # change the default
-ytk video upload clip.mp4 --title Hi --my-channel @third   # use another channel for one command
-ytk auth logout @third
-```
-
-The first channel you log in to becomes the default. Every command that calls YouTube works on the default unless `--my-channel` names another logged-in channel, and `YOUTUBE_CHANNEL` overrides the default for one shell or one MCP server. Deleting a video, playlist or comment checks it belongs to the channel you're working on, so picking the wrong channel makes the delete fail instead of reaching the other channel.
-
-All channels share the Cloud project's daily quota of 10,000 units. `ytk` remembers each channel's handle from the moment you logged in, so after renaming a channel on YouTube, name it by its UC… ID or run `ytk auth login` for it again.
-
-## Use it from an agent
-
-**Shell agents (Claude Code, Codex, Cursor and others)** use the CLI through a short skill that loads only when a YouTube task comes up. Install it with [skills](https://github.com/vercel-labs/skills), which asks which agents to add it to:
-
-```sh
-npx skills add eukosh/youtube-kit -g
-```
-
-`npx skills update` pulls newer versions of the skill later.
-
-**MCP clients** run the server with `ytk mcp`. The examples below use `uvx`, which comes with [uv](https://docs.astral.sh/uv/). For Claude Code:
-
-```sh
-claude mcp add youtube -- uvx --from youtube-kit ytk mcp
-```
-
-For clients configured with JSON (Claude Desktop, Cursor and others):
-
-```json
-{
-  "mcpServers": {
-    "youtube": {
-      "command": "uvx",
-      "args": ["--from", "youtube-kit", "ytk", "mcp"],
-      "env": { "YOUTUBE_API_KEY": "..." }
-    }
-  }
-}
-```
-
-The API key is optional. Without it, the server uses your `ytk auth login` token.
-
-With several channels logged in, MCP tools work on the default channel. Each tool also takes a `my_channel` argument, and `list_my_channels` tells the model which channels it can choose from, so you can name the channel in your request ("upload this to my gaming channel"). To give a server its own default channel, add `"YOUTUBE_CHANNEL": "@handle"` to its `env`. Tools can still name another of your channels with `my_channel`.
-
-In the ChatGPT desktop app, open Settings → MCP servers → Add server, choose STDIO, and enter `uvx --from youtube-kit ytk mcp` as the command. ChatGPT shares this setting with Codex, so `codex mcp add youtube -- uvx --from youtube-kit ytk mcp` does the same from a terminal.
-
-## Output and exit codes
-
-Every command prints one JSON document on stdout, with null fields left out. On failure stdout stays empty and stderr gets:
-
-```json
-{"error": {"type": "not_found", "message": "Video abc123def45 not found."}}
-```
-
-The exit code names the type: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout, 1 anything else. The [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md#output-contract) tells agents what to do about each.
+- **JSON out, exit codes for failures.** Every command prints one JSON document on stdout. On failure, stdout stays empty, stderr gets `{"error": {"type": "not_found", "message": "..."}}`, and the exit code names the type: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout, 1 anything else. The [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md#output-contract) tells agents what to do about each. At a terminal you get colored JSON and plain-sentence errors.
+- **Forgiving inputs.** Pass IDs or pasted YouTube URLs, `@handles` for channels, and dates or spans like `90d`.
+- **Quota costs up front.** Each command's `--help` and each MCP tool description states what it spends.
+- **One core.** The CLI and the MCP server are thin layers over the same code, and a test fails if either misses an operation.
+- **Guarded deletes.** See below.
 
 ## Deleting
 
@@ -163,7 +159,7 @@ Google gives each Cloud project 10,000 units a day, resetting at midnight Pacifi
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/eukosh/youtube-kit/blob/main/CONTRIBUTING.md) for the development setup, [CHANGELOG.md](https://github.com/eukosh/youtube-kit/blob/main/CHANGELOG.md) for what changed, and [ADR 0001](https://github.com/eukosh/youtube-kit/blob/main/docs/adr/0001-shared-core-cli-and-mcp.md) for how the core and adapters fit together. Report security issues privately, as [SECURITY.md](https://github.com/eukosh/youtube-kit/blob/main/SECURITY.md) describes.
+See [CONTRIBUTING.md](https://github.com/eukosh/youtube-kit/blob/main/CONTRIBUTING.md) for the development setup and [CHANGELOG.md](https://github.com/eukosh/youtube-kit/blob/main/CHANGELOG.md) for what changed. Report security issues privately, as [SECURITY.md](https://github.com/eukosh/youtube-kit/blob/main/SECURITY.md) describes.
 
 ## License
 

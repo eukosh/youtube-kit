@@ -46,7 +46,7 @@
           }
         ],
         "default": null,
-        "description": "Maximum number of rows. Breaking down by video returns at most 200, 25 by default;\nother breakdowns return every row."
+        "description": "Maximum number of rows. Breaking down by video returns at most 200, 25 by default;\nother breakdowns return every row by default."
       },
       "metrics": {
         "anyOf": [
@@ -61,7 +61,7 @@
           }
         ],
         "default": null,
-        "description": "Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,\nestimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view\nduration, likes, comments, and subscribers gained and lost."
+        "description": "Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,\nestimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view\nduration, likes, comments, and subscribers gained and lost. By device, os, traffic-source,\nplayback-location or subscribed, only watch metrics work (views, estimatedMinutesWatched,\naverageViewDuration, averageViewPercentage), and those are the default. By age or gender,\nonly viewerPercentage works."
       },
       "my_channel": {
         "anyOf": [
@@ -97,7 +97,7 @@
           }
         ],
         "default": null,
-        "description": "Metric or dimension to sort by; prefix with - for descending, e.g. -views."
+        "description": "Metric or dimension to sort by; prefix with - for descending, e.g. -views. Defaults to\nchronological by day or month, and to the first metric, descending, by anything else."
       },
       "until": {
         "anyOf": [

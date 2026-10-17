@@ -188,6 +188,26 @@ class AuthStatus(BaseModel):
     config_file: str
 
 
+class SetupTask(BaseModel):
+    do: str
+    url: str | None = Field(None, description="The page to do it on.")
+    values: dict[str, str] | None = Field(None, description="What to enter, by field label.")
+
+
+class SetupStep(BaseModel):
+    title: str
+    tasks: list[SetupTask]
+    gcloud: str | None = Field(
+        None, description="Shell command that does this step instead, if the gcloud CLI is installed and signed in."
+    )
+
+
+class SetupGuide(BaseModel):
+    ready: bool = Field(description="At least one channel is logged in.")
+    channels: list[MyChannel]
+    steps: list[SetupStep] = Field(description="What is left to do, in order. Empty when ready.")
+
+
 class VideoRating(BaseModel):
     video_id: str
     rating: Literal["like", "dislike", "none"]

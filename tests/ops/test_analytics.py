@@ -56,6 +56,24 @@ def test_monthly_breakdown_widens_to_whole_months(api):
     api.analytics.reports().query().execute.return_value = report(["month", "views"], [])
     result = analytics.get_analytics(by="month", since="2026-01-15", until="2026-02-10")
     assert (result.since, result.until) == (date(2026, 1, 1), date(2026, 2, 28))
+    request = api.analytics.reports().query.call_args.kwargs
+    assert (request["startDate"], request["endDate"], request["sort"]) == ("2026-01-01", "2026-02-01", "month")
+
+
+@pytest.mark.parametrize(
+    ("by", "metrics", "sort"),
+    [
+        ("country", analytics.DEFAULT_METRICS, "-views"),
+        ("traffic-source", analytics.WATCH_METRICS, "-views"),
+        ("age", ("viewerPercentage",), "-viewerPercentage"),
+        ("day", analytics.DEFAULT_METRICS, "day"),
+    ],
+)
+def test_each_breakdown_defaults_to_metrics_youtube_accepts_and_a_useful_order(api, by, metrics, sort):
+    api.analytics.reports().query().execute.return_value = report([], [])
+    analytics.get_analytics(by=by)
+    request = api.analytics.reports().query.call_args.kwargs
+    assert (request["metrics"], request["sort"]) == (",".join(metrics), sort)
 
 
 def test_video_filter_takes_urls(api):

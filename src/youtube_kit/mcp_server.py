@@ -25,7 +25,8 @@ Read and manage YouTube through the YouTube Data API v3 and YouTube Analytics.
 - Listings return at most `limit` items plus a next_page_token; pass it back as page_token to continue.
 - Every call spends daily API quota (10,000 units by default). search costs 100 units per page, so prefer
   cheaper reads: a channel's uploads_playlist_id with list_playlist_items, then get_videos.
-- Tools that act on the user's own channel need the user to have run `ytk auth login` once per channel.
+- Tools that act on the user's own channel need a one-time setup and a sign-in per channel. When a tool says
+  the user isn't logged in, setup_guide lists what is left; walk them through it one step at a time.
 - The user may be logged in to several channels. list_my_channels shows them and the default one. Tools work on
   the default channel unless my_channel names another. When the user's channel matters and they have several,
   make sure which one they mean before writing.
