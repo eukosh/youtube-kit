@@ -218,6 +218,11 @@ def my_channels(settings: Settings) -> list[MyChannel]:
     return channels
 
 
+def my_channel_ids(settings: Settings) -> set[str]:
+    """IDs of the channels with a stored login. Makes no network calls."""
+    return set(_logins(settings))
+
+
 def status(settings: Settings) -> AuthStatus:
     """What credentials are configured. Local check only; makes no network calls."""
     return AuthStatus(

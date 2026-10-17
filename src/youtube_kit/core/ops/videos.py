@@ -7,12 +7,24 @@ from typing import Annotated, Any, Literal
 from googleapiclient.http import MediaFileUpload
 from pydantic import Field
 
-from .. import client, guard, parse, progress
+from .. import auth, client, guard, parse, progress
+from ..config import Settings
 from ..errors import OTHER_CHANNEL_HINT, Forbidden, InvalidRequest, NotFound, TimedOut
 from ..models import Deleted, Privacy, ProcessingStatus, ThumbnailResult, Video, VideoCategory, VideoRating, VideoStats
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE
-from ._common import changes, delete_if_present, existing_file, image_upload, one, pick, to_int, unique_ids, video_url
+from ._common import (
+    changes,
+    delete_if_present,
+    existing_file,
+    image_upload,
+    one,
+    pick,
+    studio_url,
+    to_int,
+    unique_ids,
+    video_url,
+)
 from .channels import my_channel_id
 
 # Multiple of 256 KiB (API requirement); small enough to report progress regularly.
@@ -32,12 +44,16 @@ def get_videos(videos: list[str]) -> list[Video]:
         videos: Video IDs or URLs. Fetched in batches of 50, 1 quota unit per batch.
     """
     ids = unique_ids(videos, parse.video_id, "video ID or URL")
+    logged_in = auth.my_channel_ids(Settings.from_env())
     found: list[Video] = []
     for batch in itertools.batched(ids, API_PAGE_SIZE):
         response = (
             client.public().videos().list(part="snippet,contentDetails,statistics,status", id=",".join(batch)).execute()
         )
-        found.extend(_video(item) for item in response.get("items", []))
+        found.extend(
+            _video(item, mine=item.get("snippet", {}).get("channelId") in logged_in)
+            for item in response.get("items", [])
+        )
     if not found:
         raise NotFound(f"Video {ids[0]} not found." if len(ids) == 1 else f"None of the {len(ids)} videos were found.")
     return found
@@ -132,7 +148,7 @@ def upload_video(
         if chunk is not None:
             progress.report(chunk.resumable_progress, total)
     progress.report(total, total)
-    return _video(response)
+    return _video(response, mine=True)
 
 
 @operation(quota=51, destructive=True, idempotent=True, oauth=True)
@@ -186,7 +202,7 @@ def update_video(
         status.pop("publishAt", None)
 
     body = {"id": video_id, "snippet": snippet, "status": status}
-    return _video(youtube.videos().update(part="snippet,status", body=body).execute())
+    return _video(youtube.videos().update(part="snippet,status", body=body).execute(), mine=True)
 
 
 _WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage")
@@ -305,12 +321,13 @@ def _duration_seconds(iso: str | None) -> int | None:
     return ((days * 24 + hours) * 60 + minutes) * 60 + seconds
 
 
-def _video(item: dict) -> Video:
+def _video(item: dict, *, mine: bool = False) -> Video:
     snippet, status, details = item.get("snippet", {}), item.get("status", {}), item.get("contentDetails", {})
     stats = item.get("statistics")
     return Video(
         id=item["id"],
         url=video_url(item["id"]),
+        studio_url=studio_url(item["id"]) if mine else None,
         title=snippet.get("title"),
         description=snippet.get("description"),
         channel_id=snippet.get("channelId"),

@@ -281,6 +281,18 @@
         ],
         "default": null
       },
+      "studio_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Edit page in YouTube Studio; only for videos on channels you're logged in to."
+      },
       "tags": {
         "anyOf": [
           {

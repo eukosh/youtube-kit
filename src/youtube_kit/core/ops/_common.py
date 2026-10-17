@@ -15,6 +15,10 @@ def video_url(video_id: str) -> str:
     return f"https://www.youtube.com/watch?v={video_id}"
 
 
+def studio_url(video_id: str) -> str:
+    return f"https://studio.youtube.com/video/{video_id}/edit"
+
+
 def playlist_url(playlist_id: str) -> str:
     return f"https://www.youtube.com/playlist?list={playlist_id}"
 
