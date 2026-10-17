@@ -5,6 +5,21 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.4.0](https://github.com/eukosh/youtube-kit/compare/v0.3.0...v0.4.0) (2026-10-17)
+
+
+### Added
+
+* `ytk auth guide` and the `setup_guide` MCP tool tell agents what is left to set up ([870ac7a](https://github.com/eukosh/youtube-kit/commit/870ac7ae2d6dca9bb3a7054a9f148c9907f50e8d))
+* colored JSON and readable errors at a terminal ([870ac7a](https://github.com/eukosh/youtube-kit/commit/870ac7ae2d6dca9bb3a7054a9f148c9907f50e8d))
+* guided Google Cloud setup in `ytk auth login` ([870ac7a](https://github.com/eukosh/youtube-kit/commit/870ac7ae2d6dca9bb3a7054a9f148c9907f50e8d))
+* install the skill as a Claude Code or Codex plugin ([870ac7a](https://github.com/eukosh/youtube-kit/commit/870ac7ae2d6dca9bb3a7054a9f148c9907f50e8d))
+
+
+### Fixed
+
+* every `ytk analytics --by` breakdown works, and `--limit` returns the top rows ([870ac7a](https://github.com/eukosh/youtube-kit/commit/870ac7ae2d6dca9bb3a7054a9f148c9907f50e8d))
+
 ## [0.3.0](https://github.com/eukosh/youtube-kit/compare/v0.2.0...v0.3.0) (2026-10-17)
 
 
