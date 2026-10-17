@@ -18,6 +18,7 @@ def test_get_videos_parses_urls_dedupes_and_types_stats(api):
     assert video.stats.views == 1000
     assert video.duration_seconds == 3723
     assert video.published_at.year == 2026
+    assert video.studio_url is None  # not logged in to its channel
 
 
 def test_get_videos_links_to_studio_only_for_your_channels(api, tmp_path):
@@ -79,12 +80,13 @@ def test_update_video_changes_only_given_fields(api):
     api.oauth.videos().list().execute.return_value = {"items": [current]}
     api.oauth.videos().update().execute.return_value = current
 
-    videos.update_video("https://youtu.be/dQw4w9WgXcQ", tags=[], privacy="public")
+    result = videos.update_video("https://youtu.be/dQw4w9WgXcQ", tags=[], privacy="public")
 
     body = api.oauth.videos().update.call_args.kwargs["body"]
     assert body["snippet"]["tags"] == []
     assert body["snippet"]["title"] == "Title"
     assert body["status"] == {"privacyStatus": "public"}  # going public cancels the schedule
+    assert result.studio_url == "https://studio.youtube.com/video/dQw4w9WgXcQ/edit"
 
 
 def test_update_video_rejects_schedule_on_public_video(api):

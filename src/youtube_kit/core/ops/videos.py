@@ -44,14 +44,15 @@ def get_videos(videos: list[str]) -> list[Video]:
         videos: Video IDs or URLs. Fetched in batches of 50, 1 quota unit per batch.
     """
     ids = unique_ids(videos, parse.video_id, "video ID or URL")
-    mine = auth.my_channel_ids(Settings.from_env())
+    logged_in = auth.my_channel_ids(Settings.from_env())
     found: list[Video] = []
     for batch in itertools.batched(ids, API_PAGE_SIZE):
         response = (
             client.public().videos().list(part="snippet,contentDetails,statistics,status", id=",".join(batch)).execute()
         )
         found.extend(
-            _video(item, mine=item.get("snippet", {}).get("channelId") in mine) for item in response.get("items", [])
+            _video(item, mine=item.get("snippet", {}).get("channelId") in logged_in)
+            for item in response.get("items", [])
         )
     if not found:
         raise NotFound(f"Video {ids[0]} not found." if len(ids) == 1 else f"None of the {len(ids)} videos were found.")

@@ -37,7 +37,9 @@ class VideoStats(BaseModel):
 class Video(BaseModel):
     id: str
     url: str
-    studio_url: str | None = None  # only for videos on the user's own channels
+    studio_url: str | None = Field(
+        None, description="Edit page in YouTube Studio; only for videos on channels you're logged in to."
+    )
     title: str | None = None
     description: str | None = None
     channel_id: str | None = None
