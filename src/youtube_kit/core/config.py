@@ -16,7 +16,10 @@ APP_NAME = "youtube-kit"
 @dataclass(frozen=True)
 class Settings:
     api_key: str | None
-    token_file: Path
+    token_dir: Path
+    """One OAuth token per channel, named <channel ID>.json."""
+    channel: str | None
+    """Channel to work on when an operation isn't told; overrides the stored default."""
     client_secrets_file: Path
     config_file: Path
 
@@ -25,7 +28,8 @@ class Settings:
         config_dir = user_config_path(APP_NAME)
         return cls(
             api_key=os.environ.get("YOUTUBE_API_KEY") or None,
-            token_file=_path_env("YOUTUBE_TOKEN_FILE", config_dir / "token.json"),
+            token_dir=_path_env("YOUTUBE_TOKEN_DIR", config_dir / "tokens"),
+            channel=os.environ.get("YOUTUBE_CHANNEL") or None,
             client_secrets_file=_path_env("YOUTUBE_CLIENT_SECRETS", config_dir / "client_secrets.json"),
             config_file=_path_env("YOUTUBE_CONFIG_FILE", config_dir / "config.toml"),
         )

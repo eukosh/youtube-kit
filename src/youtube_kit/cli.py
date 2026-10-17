@@ -44,7 +44,7 @@ channel = app.command(cyclopts.App(name="channel", help="Look up channels, and b
 watermark = channel.command(cyclopts.App(name="watermark", help="The subscribe watermark shown over your videos."))
 section = channel.command(cyclopts.App(name="section", help="Sections on a channel's home page."))
 subscription = app.command(cyclopts.App(name="subscription", help="Your subscriptions to other channels."))
-auth_app = app.command(cyclopts.App(name="auth", help="Authorize access to your YouTube account."))
+auth_app = app.command(cyclopts.App(name="auth", help="Log in to your YouTube channels."))
 
 _NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
 
@@ -83,6 +83,7 @@ comment.command(comments.hold_comments, name="hold")
 comment.command(comments.reject_comments, name="reject")
 
 channel.command(channels.get_channel, name="get")
+channel.command(channels.list_my_channels, name="mine")
 channel.command(channels.list_activities, name="activity")
 channel.command(branding.update_channel, name="update", default_parameter=_NEGATIVES)
 channel.command(branding.set_channel_banner, name="banner")
@@ -101,11 +102,13 @@ subscription.command(subscriptions.unsubscribe, name="remove")
 @auth_app.command(name="login")
 # negative_bool=None brings back --no-browser, which the app-wide default turns off.
 def auth_login(*, browser: Annotated[bool, cyclopts.Parameter(negative_bool=None)] = True) -> AuthStatus:
-    """Authorize your YouTube account through Google's OAuth consent screen.
+    """Log in to one of your channels through Google's OAuth consent screen.
 
-    Needs an OAuth client of type "Desktop app" saved as client_secrets.json
-    (see `ytk auth status` for the path). The token is stored for both the CLI
-    and the MCP server.
+    Google asks which channel to authorize; run this once per channel, brand
+    accounts included. The first channel becomes the default (`ytk auth switch`
+    changes it). Needs an OAuth client of type "Desktop app" saved as
+    client_secrets.json (see `ytk auth status` for the path). Logins are shared
+    by the CLI and the MCP server.
 
     Args:
         browser: Open the consent page automatically. With --no-browser, open the printed URL yourself.
@@ -117,14 +120,30 @@ def auth_login(*, browser: Annotated[bool, cyclopts.Parameter(negative_bool=None
 
 @auth_app.command(name="status")
 def auth_status() -> AuthStatus:
-    """Show which credentials are configured and where they are stored. Makes no API calls."""
+    """Show the logged-in channels and where credentials are stored. Makes no API calls."""
     return auth.status(Settings.from_env())
 
 
+@auth_app.command(name="switch")
+def auth_switch(channel: str, /) -> AuthStatus:
+    """Make a logged-in channel the default that commands work on without --my-channel.
+
+    The YOUTUBE_CHANNEL environment variable, when set, still takes precedence.
+
+    Args:
+        channel: UC… ID or @handle of a logged-in channel.
+    """
+    return auth.switch(Settings.from_env(), channel)
+
+
 @auth_app.command(name="logout")
-def auth_logout() -> AuthStatus:
-    """Delete the stored OAuth token. The API key, if any, is unaffected."""
-    return auth.logout(Settings.from_env())
+def auth_logout(channel: str | None = None, /) -> AuthStatus:
+    """Delete a channel's stored OAuth token. The API key, if any, is unaffected.
+
+    Args:
+        channel: UC… ID or @handle of a logged-in channel. Omit for the default channel (YOUTUBE_CHANNEL when set).
+    """
+    return auth.logout(Settings.from_env(), channel)
 
 
 @app.command(name="mcp")

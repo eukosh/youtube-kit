@@ -1,6 +1,6 @@
 # OAuth credentials — never commit
 client_secrets.json
-token.json
+tokens/
 
 .venv/
 __pycache__/

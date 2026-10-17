@@ -10,6 +10,18 @@
   "input_schema": {
     "additionalProperties": false,
     "properties": {
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "timeout": {
         "default": 600,
         "description": "Seconds to wait at most. Callers that can't block for long should wait briefly and check again.",

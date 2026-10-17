@@ -63,6 +63,18 @@
         "default": null,
         "description": "Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,\nestimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view\nduration, likes, comments, and subscribers gained and lost."
       },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "since": {
         "anyOf": [
           {

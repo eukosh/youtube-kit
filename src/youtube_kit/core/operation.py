@@ -3,30 +3,22 @@
 It records transport-neutral metadata (quota cost, side effects, auth) that the
 CLI and MCP adapters render in their own way, adds the quota cost to the
 docstring both adapters publish, and translates API errors into domain errors so
-neither adapter ever sees a googleapiclient exception.
+neither adapter ever sees a googleapiclient exception. Operations that reach
+YouTube also gain a `my_channel` parameter: which of the user's logged-in
+channels to work on. It is a per-call argument rather than a "current channel"
+the MCP model switches, so every tool call shows which channel it touches.
 """
 
 import functools
 import inspect
-import socket
-import ssl
 from collections.abc import Callable
 from dataclasses import dataclass
 
-import httplib2
-from google.auth.exceptions import RefreshError, TransportError
+from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
 
-from .errors import LOGIN_HINT, NetworkError, NotAuthorized, from_http_error
-
-_NETWORK_ERRORS = (
-    httplib2.HttpLib2Error,
-    TransportError,
-    ConnectionError,
-    TimeoutError,
-    socket.gaierror,
-    ssl.SSLError,
-)
+from . import auth
+from .errors import LOGIN_HINT, NETWORK_ERRORS, NetworkError, NotAuthorized, from_http_error
 
 
 @dataclass(frozen=True)
@@ -38,8 +30,10 @@ class OperationInfo:
     """Overwrites or deletes existing data (as opposed to only adding new data)."""
     idempotent: bool
     oauth: bool
-    """Acts as the authorized user rather than reading public data."""
+    """Works on the user's own channel rather than reading public data."""
     paginated: bool
+    local: bool
+    """Reads only local state and never calls YouTube."""
 
     @property
     def quota_note(self) -> str:
@@ -52,6 +46,9 @@ class OperationInfo:
 OPERATIONS: list[Callable] = []
 """Every operation, in import order. Adapters must expose each one (enforced by tests)."""
 
+MY_CHANNEL = "my_channel"
+_MY_CHANNEL_DOC = "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+
 
 def operation[**P, R](
     *,
@@ -61,6 +58,7 @@ def operation[**P, R](
     idempotent: bool = False,
     oauth: bool = False,
     paginated: bool = False,
+    local: bool = False,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(fn: Callable[P, R]) -> Callable[P, R]:
         meta = OperationInfo(
@@ -70,20 +68,25 @@ def operation[**P, R](
             idempotent=idempotent,
             oauth=oauth,
             paginated=paginated,
+            local=local,
         )
 
         @functools.wraps(fn)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             try:
-                return fn(*args, **kwargs)
+                with auth.working_on(kwargs.pop(MY_CHANNEL, None)):  # type: ignore[arg-type]
+                    return fn(*args, **kwargs)
             except HttpError as e:
                 raise from_http_error(e) from e
             except RefreshError as e:
                 raise NotAuthorized(f"OAuth token was rejected by Google ({e}). {LOGIN_HINT}") from e
-            except _NETWORK_ERRORS as e:
+            except NETWORK_ERRORS as e:
                 raise NetworkError(f"Could not reach YouTube ({type(e).__name__}: {e}). Retry later.") from e
 
-        wrapper.__doc__ = _with_note(fn.__doc__ or "", meta.quota_note)
+        doc = _with_note(fn.__doc__ or "", meta.quota_note)
+        if not local:
+            doc = _with_my_channel(wrapper, doc)
+        wrapper.__doc__ = doc
         wrapper.__operation__ = meta  # type: ignore[attr-defined]
         OPERATIONS.append(wrapper)
         return wrapper
@@ -93,6 +96,19 @@ def operation[**P, R](
 
 def info(fn: Callable) -> OperationInfo:
     return fn.__operation__  # type: ignore[attr-defined]
+
+
+def _with_my_channel(wrapper: Callable, doc: str) -> str:
+    """Add the keyword-only `my_channel` parameter to the published signature and Args section."""
+    signature = inspect.signature(wrapper)
+    parameter = inspect.Parameter(MY_CHANNEL, inspect.Parameter.KEYWORD_ONLY, default=None, annotation=str | None)
+    wrapper.__signature__ = signature.replace(parameters=[*signature.parameters.values(), parameter])
+    annotations = {**inspect.get_annotations(wrapper), MY_CHANNEL: str | None}
+    wrapper.__annotations__ = annotations
+    # From Python 3.14, functools.wraps copies __annotate__ rather than __annotations__, and the MCP adapter wraps again.
+    wrapper.__annotate__ = lambda format: annotations  # type: ignore[attr-defined]
+    line = f"    {MY_CHANNEL}: {_MY_CHANNEL_DOC}"
+    return f"{doc}\n{line}" if "\nArgs:" in doc else f"{doc}\n\nArgs:\n{line}"
 
 
 def _with_note(doc: str, note: str) -> str:

@@ -170,11 +170,19 @@ class AnalyticsReport(BaseModel):
     rows: list[dict[str, str | int | float]]
 
 
+class MyChannel(BaseModel):
+    id: str
+    title: str
+    handle: str | None = None
+    url: str
+    default: bool = Field(description="Operations work on this channel unless told to use another.")
+    analytics: bool = Field(description="The login grants analytics access.")
+
+
 class AuthStatus(BaseModel):
     api_key_set: bool
-    token_file: str
-    token_present: bool
-    granted_scopes: list[str] | None = None
+    channels: list[MyChannel] = Field(description="Channels with a stored login.")
+    token_dir: str
     client_secrets_file: str
     client_secrets_present: bool
     config_file: str

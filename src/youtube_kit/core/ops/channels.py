@@ -2,8 +2,9 @@ from typing import Any
 
 from googleapiclient.discovery import Resource
 
-from .. import client, parse
-from ..models import Activity, Channel, ChannelStats, Page
+from .. import auth, client, parse
+from ..config import Settings
+from ..models import Activity, Channel, ChannelStats, MyChannel, Page
 from ..operation import operation
 from ..pagination import Limit, collect
 from ._common import channel_url, one, to_int
@@ -22,6 +23,16 @@ def get_channel(channel: str | None = None) -> Channel:
         return _fetch(client.oauth(), "The authorized Google account has no YouTube channel.", mine=True)
     ref = parse.channel_ref(channel)
     return _fetch(client.public(), f"Channel {ref.value} not found.", **{_LOOKUP_PARAM[ref.by]: ref.value})
+
+
+@operation(quota=0, read_only=True, idempotent=True, local=True)
+def list_my_channels() -> list[MyChannel]:
+    """Channels the user is logged in to, and which one is the default.
+
+    Operations on the user's own channel work on the default unless told to use another.
+    Reads stored logins only; makes no API calls.
+    """
+    return auth.my_channels(Settings.from_env())
 
 
 @operation(quota=1, read_only=True, idempotent=True, paginated=True)

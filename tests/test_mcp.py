@@ -11,9 +11,11 @@ import pytest
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
 
+from youtube_kit.core import auth, client
+from youtube_kit.core.config import Settings
 from youtube_kit.mcp_server import build_server
 
-from .fakes import http_error, playlist_resource
+from .fakes import http_error, playlist_resource, write_login
 
 SNAPSHOTS = Path(__file__).parent / "snapshots" / "mcp"
 
@@ -71,6 +73,22 @@ async def test_structured_results(mcp, api):
     }
     result = await mcp.call_tool("list_video_categories", {"region": "US"})
     assert result.structured_content == {"result": [{"id": "22", "title": "People & Blogs"}]}
+
+
+async def test_tools_work_on_the_channel_named(mcp, api, monkeypatch):
+    token_dir = Settings.from_env().token_dir
+    write_login(token_dir)
+    write_login(token_dir, "UC" + "b" * 22, "@other")
+    auth.switch(Settings.from_env(), "@channel")
+    acted_as = []
+    monkeypatch.setattr(
+        client, "oauth", lambda: acted_as.append(auth.token_file(Settings.from_env()).stem) or api.oauth
+    )
+
+    await mcp.call_tool("rate_video", {"video": "dQw4w9WgXcQ", "rating": "like", "my_channel": "@other"})
+    await mcp.call_tool("rate_video", {"video": "dQw4w9WgXcQ", "rating": "like"})
+
+    assert acted_as == ["UC" + "b" * 22, "UC" + "a" * 22]
 
 
 async def test_upload_progress_becomes_mcp_notifications(api, tmp_path):

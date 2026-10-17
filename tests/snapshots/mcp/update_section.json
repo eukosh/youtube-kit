@@ -25,6 +25,18 @@
         "default": null,
         "description": "Channels to show instead of the current ones (UC… IDs, @handles, or URLs)."
       },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "playlists": {
         "anyOf": [
           {

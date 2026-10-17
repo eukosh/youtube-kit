@@ -10,8 +10,10 @@ import httplib2
 import pytest
 
 from youtube_kit.cli import main
+from youtube_kit.core import auth, client
+from youtube_kit.core.config import Settings
 
-from .fakes import channel_item, http_error, playlist_resource, video_item
+from .fakes import channel_item, http_error, playlist_resource, video_item, write_login
 
 
 def run(capsys, *argv: str) -> tuple[int, str, str]:
@@ -121,7 +123,29 @@ def test_help_prints_no_json(capsys):
 def test_auth_status_needs_no_network(capsys):
     code, out, _ = run(capsys, "auth", "status")
     assert code == 0
-    assert json.loads(out)["token_present"] is False
+    assert json.loads(out)["channels"] == []
+
+
+def test_logged_in_channels_switch_and_my_channel(capsys, api, monkeypatch):
+    token_dir = Settings.from_env().token_dir
+    write_login(token_dir)
+    write_login(token_dir, "UC" + "b" * 22, "@other")
+    acted_as = []
+    monkeypatch.setattr(
+        client, "oauth", lambda: acted_as.append(auth.token_file(Settings.from_env()).stem) or api.oauth
+    )
+    api.oauth.channels().list().execute.return_value = {"items": [channel_item()]}
+
+    assert run(capsys, "channel", "get")[0] == 4  # two logins, no default yet
+    code, out, _ = run(capsys, "auth", "switch", "@other")
+    assert code == 0
+    assert [c["default"] for c in json.loads(out)["channels"]] == [False, True]
+    run(capsys, "channel", "get")
+    run(capsys, "channel", "get", "--my-channel", "@channel")
+    code, out, _ = run(capsys, "channel", "mine")
+
+    assert acted_as == ["UC" + "b" * 22, "UC" + "a" * 22]
+    assert [c["handle"] for c in json.loads(out)] == ["@channel", "@other"]
 
 
 def test_channel_get_defaults_to_mine(capsys, api):
@@ -203,6 +227,11 @@ def test_agents_get_exit_8_with_the_plan(capsys, deletable):
     assert error["details"]["title"] == "Mix"
     assert error["details"]["rerun"] == "ytk playlist delete PL1 --confirm PL1"
     deletable.delete.assert_not_called()
+
+
+def test_rerun_keeps_the_chosen_channel(capsys, deletable):
+    _, _, err = run(capsys, "playlist", "delete", "PL1", "--my-channel", "@other")
+    assert json.loads(err)["error"]["details"]["rerun"] == "ytk playlist delete PL1 --my-channel @other --confirm PL1"
 
 
 def test_agents_confirm_with_the_id(capsys, deletable):

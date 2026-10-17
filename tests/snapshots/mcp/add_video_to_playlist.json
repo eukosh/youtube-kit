@@ -10,6 +10,18 @@
   "input_schema": {
     "additionalProperties": false,
     "properties": {
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "playlist": {
         "description": "Playlist ID or URL.",
         "type": "string"

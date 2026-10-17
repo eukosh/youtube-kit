@@ -43,6 +43,18 @@
         "format": "path",
         "type": "string"
       },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "start": {
         "default": 0,
         "description": "Seconds from the start of the video when it appears, or from its end when counting from the end.",
