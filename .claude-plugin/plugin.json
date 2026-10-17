@@ -1,6 +1,6 @@
 {
   "name": "youtube-kit",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Read YouTube, manage your channels and pull analytics through the ytk CLI.",
   "author": {
     "name": "Eugene Kosharnyi",
@@ -9,6 +9,13 @@
   "homepage": "https://github.com/eukosh/youtube-kit",
   "repository": "https://github.com/eukosh/youtube-kit",
   "license": "MIT",
-  "keywords": ["youtube", "analytics", "video", "cli"],
-  "skills": ["./skills/youtube"]
+  "keywords": [
+    "youtube",
+    "analytics",
+    "video",
+    "cli"
+  ],
+  "skills": [
+    "./skills/youtube"
+  ]
 }
