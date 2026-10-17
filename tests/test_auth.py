@@ -1,4 +1,5 @@
 import json
+import os
 import stat
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -138,20 +139,21 @@ def test_env_channel_overrides_the_stored_default(settings, two_logins, monkeypa
 
 
 def test_login_stores_the_token_under_its_channel_and_the_first_becomes_default(settings, fake_flow):
-    status = auth.login(settings)
+    first = auth.login(settings)
 
-    assert [(c.id, c.title, c.default) for c in status.channels] == [(CHANNEL_ID, "Main", True)]
+    assert (first.id, first.title, first.default) == (CHANNEL_ID, "Main", True)
     stored = json.loads((settings.token_dir / f"{CHANNEL_ID}.json").read_text())
     assert stored["channel"]["handle"] == "@channel"
 
     fake_flow.channel = {"id": OTHER_ID, "title": "Second", "handle": "@other"}
-    assert [c.default for c in auth.login(settings).channels] == [True, False]
+    second = auth.login(settings)
+    assert (second.id, second.default) == (OTHER_ID, False)
+    assert [c.default for c in auth.status(settings).channels] == [True, False]
 
 
 def test_login_stores_the_scopes_google_granted(settings, fake_flow):
     fake_flow.granted = [auth.YOUTUBE]
-    [channel] = auth.login(settings).channels
-    assert not channel.analytics
+    assert not auth.login(settings).analytics
     with pytest.raises(NotAuthorized, match="analytics access"):
         auth.load_credentials(auth.token_file(settings), auth.ANALYTICS)
 
@@ -164,9 +166,54 @@ def test_a_login_for_an_account_without_a_channel_is_refused(monkeypatch):
         auth._identify(Credentials(token="t"))
 
 
-def test_login_without_client_secrets_explains_setup(settings):
-    with pytest.raises(NotAuthorized, match="Desktop app"):
+def test_login_without_an_oauth_client_points_to_the_guided_setup(settings):
+    with pytest.raises(NotAuthorized, match="walks you through"):
         auth.login(settings)
+
+
+DESKTOP_CLIENT = {"installed": {"client_id": "id.apps.googleusercontent.com", "client_secret": "s"}}
+
+
+def test_save_client_secrets_from_pasted_contents(settings):
+    auth.save_client_secrets(settings, "  " + json.dumps(DESKTOP_CLIENT) + "\n")
+    assert json.loads(settings.client_secrets_file.read_text()) == DESKTOP_CLIENT
+    assert stat.S_IMODE(settings.client_secrets_file.stat().st_mode) == 0o600
+
+
+@pytest.mark.parametrize("quote", ["{}", "'{}'", '"{}"', "ESCAPED"])
+def test_save_client_secrets_from_a_dropped_path(settings, tmp_path, quote):
+    path = tmp_path / "My Downloads" / "client_secret_1.json"
+    path.parent.mkdir()
+    path.write_text(json.dumps(DESKTOP_CLIENT))
+    typed = str(path).replace(" ", "\\ ") if quote == "ESCAPED" else quote.format(path)
+    auth.save_client_secrets(settings, typed)
+    assert json.loads(settings.client_secrets_file.read_text()) == DESKTOP_CLIENT
+
+
+@pytest.mark.parametrize(
+    ("source", "message"),
+    [
+        ('{"web": {"client_id": "x", "client_secret": "y"}}', "Desktop app"),
+        ('{"installed": {"client_id": "x"}}', "isn't an OAuth client JSON"),
+        ("{not json", "isn't the JSON file"),
+        ("/nowhere/client_secret.json", "Can't read"),
+    ],
+)
+def test_save_client_secrets_rejects_the_wrong_thing(settings, source, message):
+    with pytest.raises(InvalidRequest, match=message):
+        auth.save_client_secrets(settings, source)
+    assert not settings.client_secrets_file.exists()
+
+
+def test_downloaded_client_secrets_finds_the_newest_recent_one(tmp_path):
+    old, new, recent_other = (tmp_path / name for name in ("client_secret_a.json", "client_secret_b.json", "x.json"))
+    for path in (old, new, recent_other):
+        path.write_text("{}")
+    os.utime(old, (0, 0))
+    assert auth.downloaded_client_secrets(tmp_path) == new
+    new.unlink()
+    assert auth.downloaded_client_secrets(tmp_path) is None
+    assert auth.downloaded_client_secrets(tmp_path / "missing") is None
 
 
 def test_logout_removes_the_default_channel(settings, two_logins):

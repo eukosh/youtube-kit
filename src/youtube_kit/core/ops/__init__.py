@@ -1,3 +1,3 @@
-from . import analytics, branding, channels, comments, playlists, search, subscriptions, videos
+from . import analytics, auth, branding, channels, comments, playlists, search, subscriptions, videos
 
-__all__ = ["analytics", "branding", "channels", "comments", "playlists", "search", "subscriptions", "videos"]
+__all__ = ["analytics", "auth", "branding", "channels", "comments", "playlists", "search", "subscriptions", "videos"]

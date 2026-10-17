@@ -6,7 +6,8 @@ Contract (relied on by agents and scripts, documented in skills/youtube/SKILL.md
   with the error's code: 2 invalid input, 3 not found, 4 not authorized, 5 quota
   exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected,
   10 timeout, 1 anything else (type "error"). Usage errors from argument parsing exit 2 with type
-  "usage" (as formatted text when stderr is a terminal).
+  "usage". When stderr is a terminal, errors print as readable text instead of JSON.
+- When stdout is a terminal, the JSON is indented and colored.
 - Guarded deletes ask a human at a terminal instead of exiting 8; declining exits 1.
   For agents, the exit-8 details include `rerun`, the exact command that confirms.
 """
@@ -22,12 +23,15 @@ from typing import Annotated
 import cyclopts
 import pydantic_core
 from cyclopts import CycloptsError
+from rich.console import Console
+from rich.markup import escape
 
-from . import core
+from . import core, guide
 from .core import auth, progress
 from .core.config import Settings
 from .core.models import AuthStatus
 from .core.ops import analytics, branding, channels, comments, playlists, search, subscriptions, videos
+from .core.ops import auth as auth_ops
 
 app = cyclopts.App(
     name="ytk",
@@ -99,23 +103,48 @@ subscription.command(subscriptions.subscribe, name="add")
 subscription.command(subscriptions.unsubscribe, name="remove")
 
 
-@auth_app.command(name="login")
-# negative_bool=None brings back --no-browser, which the app-wide default turns off.
-def auth_login(*, browser: Annotated[bool, cyclopts.Parameter(negative_bool=None)] = True) -> AuthStatus:
-    """Log in to one of your channels through Google's OAuth consent screen.
+auth_app.command(auth_ops.setup_guide, name="guide")
 
-    Google asks which channel to authorize; run this once per channel, brand
-    accounts included. The first channel becomes the default (`ytk auth switch`
-    changes it). Needs an OAuth client of type "Desktop app" saved as
-    client_secrets.json (see `ytk auth status` for the path). Logins are shared
-    by the CLI and the MCP server.
+
+@auth_app.command(name="login")
+def auth_login(
+    *,
+    # negative_bool=None brings back --no-browser, which the app-wide default turns off.
+    browser: Annotated[bool, cyclopts.Parameter(negative_bool=None)] = True,
+    client_secrets: str | None = None,
+) -> AuthStatus:
+    """Connect one of your YouTube channels. Run it again to add another.
+
+    The first run walks you through creating the Google Cloud OAuth client ytk
+    needs, then Google asks which channel to connect. The first channel becomes
+    the default (`ytk auth switch` changes it). Logins are shared by the CLI and
+    the MCP server.
 
     Args:
-        browser: Open the consent page automatically. With --no-browser, open the printed URL yourself.
+        browser: Open pages in the browser automatically. With --no-browser, open the printed links yourself.
+        client_secrets: The OAuth client JSON downloaded from Google Cloud (path or contents). Skips the guided setup.
     """
+    settings = Settings.from_env()
+    interactive = sys.stdin.isatty() and sys.stderr.isatty()
+    if client_secrets is not None:
+        auth.save_client_secrets(settings, client_secrets)
+    elif interactive and not settings.client_secrets_file.exists():
+        guide.set_up_client(settings, open_pages=browser)
+    if interactive:
+        guide.before_consent(open_browser=browser)
     # The OAuth library prints the consent URL to stdout, which is reserved for JSON.
     with contextlib.redirect_stdout(sys.stderr):
-        return auth.login(Settings.from_env(), open_browser=browser)
+        creds = auth.authorize(settings, open_browser=browser)
+    while True:
+        try:
+            channel = auth.connect(settings, creds)
+            break
+        except core.Forbidden as e:  # typically: YouTube Data API not enabled in the project yet
+            if not interactive:
+                raise
+            guide.retry(e)
+    guide.connected(channel)
+    return auth.status(settings)
 
 
 @auth_app.command(name="status")
@@ -181,9 +210,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     except Exception as e:  # noqa: BLE001  -- keep the JSON contract even for bugs and odd responses
         return _fail(core.YouTubeError(f"{type(e).__name__}: {e}"))
     if result is not None:
-        indent = 2 if sys.stdout.isatty() else None
+        text = pydantic_core.to_json(result, exclude_none=True).decode()
         try:
-            print(pydantic_core.to_json(result, indent=indent, exclude_none=True).decode())
+            if sys.stdout.isatty():
+                Console(highlight=True).print_json(text, indent=2)
+            else:
+                print(text)
         except BrokenPipeError:  # e.g. piped into head
             sys.stdout = None  # stop the interpreter's final flush from raising again
     return 0
@@ -193,7 +225,13 @@ def _fail(error: core.YouTubeError) -> int:
     body = {"type": error.kind, "message": str(error)}
     if error.details:
         body["details"] = error.details
-    print(json.dumps({"error": body}, ensure_ascii=False), file=sys.stderr)
+    if sys.stderr.isatty():
+        console = Console(stderr=True, highlight=False)
+        console.print(f"[red]✗[/] {escape(str(error))} [dim]({error.kind})[/]", soft_wrap=True)
+        if error.details:
+            console.print_json(data=error.details, indent=2)
+    else:
+        print(json.dumps({"error": body}, ensure_ascii=False), file=sys.stderr)
     return error.exit_code
 
 

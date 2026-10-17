@@ -2,6 +2,7 @@
 
 import io
 import json
+import re
 import subprocess
 import sys
 from unittest.mock import MagicMock
@@ -174,7 +175,8 @@ def test_progress_line_is_ended_before_an_error(capsys, api, tmp_path, monkeypat
     assert code == 5
     progress_line, error_line = err.strip().split("\n")
     assert progress_line.endswith("progress:  40%")
-    assert json.loads(error_line)["error"]["type"] == "quota_exceeded"
+    assert "\x1b[" in error_line  # colored for the person watching
+    assert re.sub(r"\x1b\[[0-9;]*m", "", error_line).startswith("✗ API says no.")
 
 
 def test_ctrl_c_exits_130(capsys, api):

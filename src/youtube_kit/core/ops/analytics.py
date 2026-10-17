@@ -34,6 +34,12 @@ DEFAULT_METRICS = (
     "subscribersGained",
     "subscribersLost",
 )
+WATCH_METRICS = ("views", "estimatedMinutesWatched", "averageViewDuration")
+# YouTube rejects likes, comments and subscriber counts for these breakdowns, and age and gender take only this one.
+_DEFAULT_METRICS_BY = {
+    **dict.fromkeys(("device", "os", "traffic-source", "playback-location", "subscribed"), WATCH_METRICS),
+    **dict.fromkeys(("age", "gender"), ("viewerPercentage",)),
+}
 DEFAULT_DAYS = 28
 PACIFIC = ZoneInfo("America/Los_Angeles")
 
@@ -61,11 +67,15 @@ def get_analytics(
             By month, the range widens to whole months.
         metrics: Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,
             estimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view
-            duration, likes, comments, and subscribers gained and lost.
+            duration, likes, comments, and subscribers gained and lost. By device, os, traffic-source,
+            playback-location or subscribed, only watch metrics work (views, estimatedMinutesWatched,
+            averageViewDuration, averageViewPercentage), and those are the default. By age or gender,
+            only viewerPercentage works.
         videos: Only these videos (IDs or URLs).
-        sort: Metric or dimension to sort by; prefix with - for descending, e.g. -views.
+        sort: Metric or dimension to sort by; prefix with - for descending, e.g. -views. Defaults to
+            chronological by day or month, and to the first metric, descending, by anything else.
         limit: Maximum number of rows. Breaking down by video returns at most 200, 25 by default;
-            other breakdowns return every row.
+            other breakdowns return every row by default.
     """
     today = datetime.now(PACIFIC).date()  # YouTube's reporting day
     end = parse.day(until, ago_from=today) if until else today
@@ -75,21 +85,21 @@ def get_analytics(
         end = end.replace(day=calendar.monthrange(end.year, end.month)[1])
     if start > end:
         raise InvalidRequest(f"since ({start}) is after until ({end}).")
-    metrics = metrics or list(DEFAULT_METRICS)
+    metrics = metrics or list(_DEFAULT_METRICS_BY.get(by, DEFAULT_METRICS))
     params: dict[str, Any] = {
         "ids": "channel==MINE",
         "startDate": start.isoformat(),
-        "endDate": end.isoformat(),
+        # By month, YouTube wants the first day of the last month, not its last day.
+        "endDate": (end.replace(day=1) if by == "month" else end).isoformat(),
         "metrics": ",".join(metrics),
     }
     if by:
         params["dimensions"] = _API_DIMENSIONS[by]
+        sort = sort or (by if by in {"day", "month"} else f"-{metrics[0]}")
     if videos:
         params["filters"] = "video==" + ",".join(unique_ids(videos, parse.video_id, "video ID or URL"))
     if by == "video":
-        # Video breakdowns are rejected without a sort and at most 200 rows.
-        sort = sort or f"-{metrics[0]}"
-        limit = min(limit or 25, 200)
+        limit = min(limit or 25, 200)  # YouTube's cap for video breakdowns
     if sort:
         params["sort"] = sort
     if limit:

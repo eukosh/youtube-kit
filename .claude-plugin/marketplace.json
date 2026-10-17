@@ -1,0 +1,17 @@
+{
+  "name": "youtube-kit",
+  "owner": {
+    "name": "Eugene Kosharnyi",
+    "url": "https://github.com/eukosh"
+  },
+  "description": "The youtube skill for the ytk CLI.",
+  "plugins": [
+    {
+      "name": "youtube-kit",
+      "source": "./",
+      "description": "Read YouTube, manage your channels and pull analytics through the ytk CLI.",
+      "category": "productivity",
+      "keywords": ["youtube", "analytics", "video", "cli"]
+    }
+  ]
+}

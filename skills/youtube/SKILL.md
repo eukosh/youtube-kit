@@ -6,7 +6,7 @@ compatibility: Needs the ytk CLI (uv tool install youtube-kit) and YouTube API c
 
 # YouTube via `ytk`
 
-`ytk` wraps the YouTube Data and Analytics APIs and prints JSON. If it isn't on PATH, install it with `uv tool install youtube-kit`, or run one-off commands as `uvx --from youtube-kit ytk ...`. Credentials setup (API key, OAuth login) is in the [README](https://github.com/eukosh/youtube-kit#credentials); `ytk auth status` shows what is configured.
+`ytk` wraps the YouTube Data and Analytics APIs and prints JSON. If it isn't on PATH, install it with `uv tool install youtube-kit`, or run one-off commands as `uvx --from youtube-kit ytk ...`. Before the first use, see Setup.
 
 Commands:
 
@@ -35,7 +35,7 @@ ytk channel banner IMAGE           ytk channel watermark set IMAGE  ytk channel 
 ytk channel section list [CHANNEL] | add KIND | update SECTION | delete SECTION
 
 ytk subscription list              ytk subscription add CHANNEL     ytk subscription remove CHANNEL
-ytk auth status | login | switch CHANNEL | logout [CHANNEL]
+ytk auth status | guide | login | switch CHANNEL | logout [CHANNEL]
 ```
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
@@ -53,13 +53,20 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 | 1 | `error` | unexpected failure, or the user declined a delete; report the message |
 | 2 | `invalid_request` / `usage` | fix the arguments (message says which) |
 | 3 | `not_found` | the ID or handle doesn't exist or isn't visible |
-| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser; setup is in the README linked above). For public data an exported `YOUTUBE_API_KEY` also works. Also when an older login lacks analytics access, when `--my-channel` names a channel that isn't logged in, and when several channels are logged in with no default (see Several channels) |
+| 4 | `not_authorized` | not set up or not logged in: see Setup. For public data an exported `YOUTUBE_API_KEY` also works. Also when an older login lacks analytics access, when `--my-channel` names a channel that isn't logged in, and when several channels are logged in with no default (see Several channels) |
 | 5 | `quota_exceeded` | stop; quota resets at midnight Pacific Time |
 | 6 | `forbidden` | YouTube refuses (comments disabled, unverified channel for thumbnails, …) |
 | 7 | `network` | retry once |
 | 8 | `confirmation_required` | a delete needs approval: see Changing the user's channel |
 | 9 | `protected` | the video is past the delete protection limits; stop and give the user `details.studio_url` |
 | 10 | `timeout` | `video status --wait` ran out of time; processing continues, check again later |
+
+## Setup
+
+`ytk auth guide` says what is left: `ready`, the logged-in `channels`, and the remaining `steps`, each with `tasks` (what to click, the `url`, the `values` to enter). Two ways through it:
+
+- The user runs `ytk auth login` in their own terminal. It walks them through every step and Google's sign-in.
+- You guide them in the chat, one step at a time. If `gcloud` is installed and `gcloud auth list` shows the account the user wants, offer to run the steps that have a `gcloud` command: pick a unique project ID (6–30 characters, e.g. `youtube-` plus random digits); a brand-new Google account must open console.cloud.google.com once to accept the terms first. Then `ytk auth guide --project ID` gives links with that project selected. The rest (consent screen, Branding, publishing, the OAuth client) only exists in the browser. When they have the JSON, pass on the tips of the last step (Google's "hasn't verified this app" warning is expected), then run `ytk auth login --client-secrets FILE`: it opens Google's sign-in in their browser and waits until they pick the channel.
 
 ## Several channels
 

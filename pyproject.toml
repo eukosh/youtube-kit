@@ -1,13 +1,13 @@
 [project]
 name = "youtube-kit"
 version = "0.3.0"
-description = "A CLI (ytk) and MCP server for the YouTube Data and Analytics APIs, built for agents and humans."
+description = "YouTube CLI (ytk) and MCP server, built for agents and humans: analytics, uploads, comments and playlists across your channels."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Eugene Kosharnyi", email = "eugene.kosharnyi@gmail.com" }]
-keywords = ["youtube", "youtube-data-api", "youtube-analytics", "cli", "mcp", "model-context-protocol", "agents"]
+keywords = ["youtube", "youtube-cli", "youtube-mcp", "mcp", "cli", "agents", "claude", "codex", "youtube-analytics", "youtube-data-api"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -31,6 +31,7 @@ dependencies = [
     "httplib2>=0.22",
     "platformdirs>=4.11",
     "pydantic>=2.13,<3",
+    "rich>=14",
 ]
 
 [project.urls]
