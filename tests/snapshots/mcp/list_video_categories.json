@@ -10,6 +10,18 @@
   "input_schema": {
     "additionalProperties": false,
     "properties": {
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "region": {
         "default": "US",
         "description": "ISO 3166-1 alpha-2 country code.",

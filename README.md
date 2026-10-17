@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/youtube-kit)](https://pypi.org/project/youtube-kit/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/eukosh/youtube-kit/blob/main/LICENSE)
 
-Most YouTube CLIs and MCP servers do one thing. They upload, or they pull analytics, or they search and stop there. `ytk` does 43 things, which is most of what the YouTube Data and Analytics APIs allow for a channel, and it prints JSON. `ytk mcp` serves the same 43 operations to MCP clients.
+Most YouTube CLIs and MCP servers do one thing. They upload, or they pull analytics, or they search and stop there. `ytk` does 44 things, which is most of what the YouTube Data and Analytics APIs allow for a channel, and it prints JSON. `ytk mcp` serves the same 44 operations to MCP clients.
 
 ```sh
 ytk channel get @mkbhd | jq '{title, subscribers: .stats.subscribers}'
@@ -21,7 +21,7 @@ ytk comment list --status held                     # comments waiting for review
 | Videos | get, categories, upload (resumable, with progress), update metadata, set thumbnail, wait for processing, like or dislike, check your rating, delete |
 | Playlists | list, get, items, create, update, set image, add, remove, move, delete |
 | Comments | list (published, held for review, likely spam, rejected), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
-| Channel | get, recent activity, about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
+| Channel | get, recent activity, your logged-in channels (several at once), about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
 | Subscriptions | list, subscribe, unsubscribe |
 | Analytics | totals, or breakdowns by day, month, video, country, device, OS, traffic source, playback location, age, gender or subscribed status |
 
@@ -59,7 +59,7 @@ Public data (search, videos, channels, playlists, comments) works with an API ke
 3. For your own channel, set up **OAuth**:
    1. Configure the OAuth consent screen (user type *External*) and add your Google account as a test user.
    2. Create an OAuth client ID of type *Desktop app*, download its JSON, and save it where `ytk auth status` says `client_secrets_file` lives.
-   3. Run `ytk auth login`. It opens a browser and stores a token that the CLI and the MCP server share.
+   3. Run `ytk auth login`. It opens a browser, asks which channel to authorize, and stores a token that the CLI and the MCP server share. Run it again for each further channel (see [Several channels](#several-channels)).
 
 > [!NOTE]
 > While the consent screen is in *Testing* status, Google expires the login after 7 days and you need to run `ytk auth login` again. To keep it, set the publishing status to *In production*. Google then shows an "unverified app" warning at login, which is expected for your own client. Continue past it.
@@ -70,8 +70,25 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 |---|---|
 | `YOUTUBE_API_KEY` | API key for public data |
 | `YOUTUBE_CLIENT_SECRETS` | Path to the OAuth client JSON |
-| `YOUTUBE_TOKEN_FILE` | Path to the stored login |
+| `YOUTUBE_TOKEN_DIR` | Directory of stored logins, one file per channel |
+| `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID or @handle), overriding `ytk auth switch` |
 | `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits) |
+
+### Several channels
+
+A Google login authorizes one channel, so each channel you manage gets its own `ytk auth login`. That includes brand-account channels under the same Google account: pick the channel when Google asks which account to use. The OAuth client and API key stay the same for all of them.
+
+```sh
+ytk auth login                            # once per channel
+ytk channel mine                          # logged-in channels; one is marked "default": true
+ytk auth switch @second                   # change the default
+ytk video upload clip.mp4 --title Hi --my-channel @third   # use another channel for one command
+ytk auth logout @third
+```
+
+The first channel you log in to becomes the default. Every command that calls YouTube works on the default unless `--my-channel` names another logged-in channel, and `YOUTUBE_CHANNEL` overrides the default for one shell or one MCP server. Deleting a video, playlist or comment checks it belongs to the channel you're working on, so picking the wrong channel makes the delete fail instead of reaching the other channel.
+
+All channels share the Cloud project's daily quota of 10,000 units. `ytk` remembers each channel's handle from the moment you logged in, so after renaming a channel on YouTube, name it by its UC… ID or run `ytk auth login` for it again.
 
 ## Use it from an agent
 
@@ -104,6 +121,8 @@ For clients configured with JSON (Claude Desktop, Cursor and others):
 ```
 
 The API key is optional. Without it, the server uses your `ytk auth login` token.
+
+With several channels logged in, MCP tools work on the default channel. Each tool also takes a `my_channel` argument, and `list_my_channels` tells the model which channels it can choose from, so you can name the channel in your request ("upload this to my gaming channel"). To give a server its own default channel, add `"YOUTUBE_CHANNEL": "@handle"` to its `env`. Tools can still name another of your channels with `my_channel`.
 
 In the ChatGPT desktop app, open Settings → MCP servers → Add server, choose STDIO, and enter `uvx --from youtube-kit ytk mcp` as the command. ChatGPT shares this setting with Codex, so `codex mcp add youtube -- uvx --from youtube-kit ytk mcp` does the same from a terminal.
 

@@ -14,6 +14,18 @@
         "description": "Comment ID or link. Replying to a reply adds to the same thread.",
         "type": "string"
       },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "text": {
         "description": "The reply.",
         "type": "string"

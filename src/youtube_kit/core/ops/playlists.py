@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import client, guard, parse
-from ..errors import Forbidden, InvalidRequest, NotFound
+from ..errors import OTHER_CHANNEL_HINT, Forbidden, InvalidRequest, NotFound
 from ..models import Deleted, Page, Playlist, PlaylistEntry, PlaylistImage, PlaylistItem, PlaylistRemoval, Privacy
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
@@ -146,7 +146,7 @@ def delete_playlist(playlist: str, *, confirm: str | None = None) -> Deleted:
         return Deleted(kind="playlist", id=playlist_id, already_gone=True)
     target = _playlist(items[0])
     if target.channel_id != my_channel_id():
-        raise Forbidden(f"Playlist {playlist_id} belongs to another channel.")
+        raise Forbidden(f"Playlist {playlist_id} belongs to another channel. {OTHER_CHANNEL_HINT}")
     plan = {"title": target.title, "url": target.url, "privacy": target.privacy, "videos": target.item_count}
     guard.require_confirm("playlist", playlist_id, confirm, plan)
     deleted = delete_if_present(youtube.playlists().delete(id=playlist_id))

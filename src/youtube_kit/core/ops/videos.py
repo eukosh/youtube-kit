@@ -8,7 +8,7 @@ from googleapiclient.http import MediaFileUpload
 from pydantic import Field
 
 from .. import client, guard, parse, progress
-from ..errors import Forbidden, InvalidRequest, NotFound, TimedOut
+from ..errors import OTHER_CHANNEL_HINT, Forbidden, InvalidRequest, NotFound, TimedOut
 from ..models import Deleted, Privacy, ProcessingStatus, ThumbnailResult, Video, VideoCategory, VideoRating, VideoStats
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE
@@ -240,7 +240,7 @@ def delete_video(video: str, *, confirm: str | None = None) -> Deleted:
         return Deleted(kind="video", id=video_id, already_gone=True)
     target = _video(items[0])
     if target.channel_id != my_channel_id():
-        raise Forbidden(f"Video {video_id} belongs to another channel.")
+        raise Forbidden(f"Video {video_id} belongs to another channel. {OTHER_CHANNEL_HINT}")
     guard.check_protected(target)
     plan = {
         "title": target.title,

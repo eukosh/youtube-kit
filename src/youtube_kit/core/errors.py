@@ -1,9 +1,23 @@
 """Domain errors. Adapters map these to MCP tool errors and CLI exit codes."""
 
 import json
+import socket
+import ssl
 from typing import Any, ClassVar
 
+import httplib2
+from google.auth.exceptions import TransportError
 from googleapiclient.errors import HttpError
+
+NETWORK_ERRORS = (
+    httplib2.HttpLib2Error,
+    TransportError,
+    ConnectionError,
+    TimeoutError,
+    socket.gaierror,
+    ssl.SSLError,
+)
+"""Exceptions that mean YouTube or Google could not be reached."""
 
 
 class YouTubeError(Exception):
@@ -76,6 +90,7 @@ class TimedOut(YouTubeError):
 
 
 LOGIN_HINT = "Run `ytk auth login` to authorize your YouTube account."
+OTHER_CHANNEL_HINT = "If it is on another of your logged-in channels, run this on that channel instead."
 API_KEY_HINT = "Check YOUTUBE_API_KEY, or unset it to use your OAuth login for public data too."
 
 _QUOTA_REASONS = {"quotaExceeded", "dailyLimitExceeded"}

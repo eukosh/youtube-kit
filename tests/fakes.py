@@ -55,7 +55,7 @@ def channel_item(channel_id: str = CHANNEL_ID) -> dict:
 
 
 def write_token(path, **overrides) -> None:
-    """An authorized-user token file, valid until 2999 unless overridden."""
+    """An authorized-user token file, valid until 2999 unless overridden. No channel unless given one."""
     token = {
         "token": "access",
         "refresh_token": "refresh",
@@ -66,7 +66,16 @@ def write_token(path, **overrides) -> None:
         "scopes": ["https://www.googleapis.com/auth/youtube.force-ssl"],
         **overrides,
     }
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(token))
+
+
+def write_login(token_dir, channel_id: str = CHANNEL_ID, handle: str | None = "@channel", **overrides):
+    """A stored login for a channel, as `ytk auth login` leaves it. Returns the token's path."""
+    path = token_dir / f"{channel_id}.json"
+    channel = {"id": channel_id, "title": f"Title of {handle or channel_id}", "handle": handle}
+    write_token(path, channel=channel, **overrides)
+    return path
 
 
 def playlist_item_resource(position: int = 0, item_id: str = "item1") -> dict:

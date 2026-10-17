@@ -29,13 +29,13 @@ ytk comment replies COMMENT        ytk comment post VIDEO TEXT      ytk comment 
 ytk comment edit COMMENT TEXT      ytk comment delete COMMENT
 ytk comment approve|hold COMMENT...                                 ytk comment reject COMMENT... [--ban-author]
 
-ytk channel get [CHANNEL]          ytk channel activity [CHANNEL]
+ytk channel get [CHANNEL]          ytk channel activity [CHANNEL]   ytk channel mine
 ytk channel update [--description] [--keywords K]... [--country] [--language] [--trailer VIDEO]
 ytk channel banner IMAGE           ytk channel watermark set IMAGE  ytk channel watermark remove
 ytk channel section list [CHANNEL] | add KIND | update SECTION | delete SECTION
 
 ytk subscription list              ytk subscription add CHANNEL     ytk subscription remove CHANNEL
-ytk auth status | login | logout
+ytk auth status | login | switch CHANNEL | logout [CHANNEL]
 ```
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
@@ -53,13 +53,19 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 | 1 | `error` | unexpected failure, or the user declined a delete; report the message |
 | 2 | `invalid_request` / `usage` | fix the arguments (message says which) |
 | 3 | `not_found` | the ID or handle doesn't exist or isn't visible |
-| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser; setup is in the README linked above). For public data an exported `YOUTUBE_API_KEY` also works. Also when an older login lacks analytics access |
+| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser; setup is in the README linked above). For public data an exported `YOUTUBE_API_KEY` also works. Also when an older login lacks analytics access, when `--my-channel` names a channel that isn't logged in, and when several channels are logged in with no default (see Several channels) |
 | 5 | `quota_exceeded` | stop; quota resets at midnight Pacific Time |
 | 6 | `forbidden` | YouTube refuses (comments disabled, unverified channel for thumbnails, …) |
 | 7 | `network` | retry once |
 | 8 | `confirmation_required` | a delete needs approval: see Changing the user's channel |
 | 9 | `protected` | the video is past the delete protection limits; stop and give the user `details.studio_url` |
 | 10 | `timeout` | `video status --wait` ran out of time; processing continues, check again later |
+
+## Several channels
+
+The user can be logged in to several channels, one `ytk auth login` each. `ytk channel mine` lists them (no API call) and marks the `default` one. Every command that reaches YouTube works on the default channel unless `--my-channel CHANNEL` (UC… ID or @handle of a logged-in channel) names another; `YOUTUBE_CHANNEL` sets it for a whole shell. `ytk auth switch CHANNEL` changes the stored default for every later command and for the MCP server, so don't run it on the user's behalf; pass `--my-channel` instead.
+
+When the user has several channels and the task touches "my channel" without saying which, ask before writing anything. Read-only commands on someone else's content (`video get`, `search`, `channel get @someone`) don't care which of the user's channels you use. All logged-in channels share the project's daily quota. Handles are the ones stored at login; if one doesn't match after a rename, use the channel's `id` from `ytk channel mine`.
 
 ## Changing the user's channel
 

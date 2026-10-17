@@ -12,7 +12,8 @@ from .fakes import CHANNEL_ID
 def isolated_env(monkeypatch, tmp_path):
     """Never read the developer's real credentials or config."""
     monkeypatch.delenv("YOUTUBE_API_KEY", raising=False)
-    monkeypatch.setenv("YOUTUBE_TOKEN_FILE", str(tmp_path / "token.json"))
+    monkeypatch.delenv("YOUTUBE_CHANNEL", raising=False)
+    monkeypatch.setenv("YOUTUBE_TOKEN_DIR", str(tmp_path / "tokens"))
     monkeypatch.setenv("YOUTUBE_CLIENT_SECRETS", str(tmp_path / "client_secrets.json"))
     monkeypatch.setenv("YOUTUBE_CONFIG_FILE", str(tmp_path / "config.toml"))
 

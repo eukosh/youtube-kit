@@ -30,6 +30,18 @@
         "description": "Whether the video is made for kids (COPPA).",
         "type": "boolean"
       },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "privacy": {
         "default": "private",
         "description": "Privacy status. Must be private when publish_at is set.",

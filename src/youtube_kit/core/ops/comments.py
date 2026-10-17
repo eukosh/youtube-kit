@@ -2,7 +2,7 @@ import itertools
 from typing import Any, Literal
 
 from .. import client, guard, parse
-from ..errors import Forbidden
+from ..errors import OTHER_CHANNEL_HINT, Forbidden
 from ..models import Comment, CommentStatus, Deleted, Moderated, Page
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
@@ -127,7 +127,9 @@ def delete_comment(comment: str, *, confirm: str | None = None) -> Deleted:
         return Deleted(kind="comment", id=comment_id, already_gone=True)
     target = _comment(items[0])
     if target.author_channel_id != my_channel_id():
-        raise Forbidden(f"Comment {comment_id} was written by someone else. Reject it to hide it instead.")
+        raise Forbidden(
+            f"Comment {comment_id} was written by someone else. Reject it to hide it instead. {OTHER_CHANNEL_HINT}"
+        )
     plan = {"author": target.author, "text": target.text, "video_id": target.video_id}
     guard.require_confirm("comment", comment_id, confirm, plan)
     deleted = delete_if_present(youtube.comments().delete(id=comment_id))

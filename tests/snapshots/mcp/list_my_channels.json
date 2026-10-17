@@ -1,0 +1,67 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "Channels the user is logged in to, and which one is the default.\n\nOperations on the user's own channel work on the default unless told to use another.\nReads stored logins only; makes no API calls.\n\nQuota: no YouTube Data API units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {},
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "result": {
+        "items": {
+          "properties": {
+            "analytics": {
+              "description": "The login grants analytics access.",
+              "type": "boolean"
+            },
+            "default": {
+              "description": "Operations work on this channel unless told to use another.",
+              "type": "boolean"
+            },
+            "handle": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "url",
+            "default",
+            "analytics"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "result"
+    ],
+    "type": "object",
+    "x-fastmcp-wrap-result": true
+  }
+}

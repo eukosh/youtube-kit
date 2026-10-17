@@ -15,6 +15,18 @@
         "description": "Playlist description.",
         "type": "string"
       },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
       "privacy": {
         "default": "private",
         "description": "Privacy status.",
