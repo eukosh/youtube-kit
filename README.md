@@ -34,12 +34,18 @@ ytk comment list --status held                     # comments waiting for review
 
 ## Install
 
+`ytk` installs as a global command in its own isolated environment, with [uv](https://docs.astral.sh/uv/):
+
 ```sh
-uv tool install youtube-kit     # or: pipx install youtube-kit
+uv tool install youtube-kit
 ytk --help
 ```
 
-Or run it without installing: `uvx --from youtube-kit ytk --help`. Needs Python 3.12 or newer.
+No uv yet? Install it first with `brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`. uv fetches a suitable Python by itself.
+
+- Upgrade with `uv tool upgrade youtube-kit`, and remove with `uv tool uninstall youtube-kit`.
+- With pipx instead: `pipx install youtube-kit` (needs Python 3.12 or newer).
+- To try it without installing: `uvx --from youtube-kit ytk --help`.
 
 ## Credentials
 
