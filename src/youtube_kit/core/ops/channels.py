@@ -73,6 +73,12 @@ def my_channel_id() -> str:
     return one(client.oauth().channels().list(part="id", mine=True).execute(), "You have no YouTube channel.")["id"]
 
 
+def my_uploads_playlist_id() -> str:
+    """The authorized user's uploads playlist: every video on the channel, newest first."""
+    response = client.oauth().channels().list(part="contentDetails", mine=True).execute()
+    return one(response, "You have no YouTube channel.")["contentDetails"]["relatedPlaylists"]["uploads"]
+
+
 def owner_or(channel: str | None) -> tuple[Resource, dict[str, Any]]:
     """Client and list selector for a channel's resources: your own (mine=True) when channel is None."""
     if channel is None:

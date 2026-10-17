@@ -109,6 +109,17 @@ def test_update_video_answers_disclosures_only_when_given(api):
     assert answered["body"]["snippet"]["defaultAudioLanguage"] == "uk"
 
 
+def test_update_video_keeps_the_video_language(api):
+    current = video_item(snippet={"title": "Old", "defaultAudioLanguage": "uk", "defaultLanguage": "uk"})
+    api.oauth.videos().list().execute.return_value = {"items": [current]}
+    api.oauth.videos().update().execute.return_value = current
+
+    videos.update_video("dQw4w9WgXcQ", title="New")
+
+    snippet = api.oauth.videos().update.call_args.kwargs["body"]["snippet"]
+    assert snippet == {"title": "New", "defaultAudioLanguage": "uk", "defaultLanguage": "uk"}
+
+
 def test_update_video_rejects_schedule_on_public_video(api):
     api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
     with pytest.raises(InvalidRequest, match="private"):
@@ -179,6 +190,23 @@ def test_upload_video_copies_category_and_languages_from_recent_public_uploads(a
     assert snippet["categoryId"] == "24"  # the newest public one; the private draft doesn't count
     assert snippet["defaultLanguage"] == "uk"  # given wins
     assert snippet["defaultAudioLanguage"] == "en-GB"  # from the newest upload that has one
+
+
+def test_upload_video_looks_past_a_page_of_private_uploads(api, tmp_path):
+    drafts = [video_item(f"draft{i:06d}", status={"privacyStatus": "private"}) for i in range(2)]
+    public = video_item("public00000", snippet={"categoryId": "27", "defaultLanguage": "de"})
+    _recent_uploads(api)
+    api.oauth.playlistItems().list().execute.side_effect = [
+        {"items": [{"contentDetails": {"videoId": d["id"]}} for d in drafts], "nextPageToken": "P2"},
+        {"items": [{"contentDetails": {"videoId": "public00000"}}]},
+    ]
+    api.oauth.videos().list().execute.side_effect = [{"items": drafts}, {"items": [public]}]
+
+    snippet = _upload(api, tmp_path)
+
+    assert snippet["categoryId"] == "27"
+    assert snippet["defaultLanguage"] == "de"
+    assert api.oauth.playlistItems().list.call_args.kwargs["pageToken"] == "P2"
 
 
 def test_upload_video_without_public_uploads_uses_people_and_blogs(api, tmp_path):

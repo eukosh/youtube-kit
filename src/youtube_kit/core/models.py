@@ -47,8 +47,8 @@ class Video(BaseModel):
     published_at: datetime | None = None
     tags: list[str] | None = None
     category_id: str | None = None
-    language: str | None = None
-    audio_language: str | None = None
+    language: str | None = Field(None, description="Language of the title and description, e.g. en-US.")
+    audio_language: str | None = Field(None, description="Language spoken in the video, e.g. en-US.")
     duration: str | None = None
     duration_seconds: int | None = None
     stats: VideoStats | None = None

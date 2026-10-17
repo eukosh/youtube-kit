@@ -1,6 +1,7 @@
 import itertools
 import re
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -25,12 +26,14 @@ from ._common import (
     unique_ids,
     video_url,
 )
-from .channels import my_channel_id
+from .channels import my_channel_id, my_uploads_playlist_id
 
 # Multiple of 256 KiB (API requirement); small enough to report progress regularly.
 UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024
 UPLOAD_RETRIES = 5
 POLL_SECONDS = 10
+# How far back upload looks for a public video to copy category and languages from: 3 x 50 uploads.
+RECENT_UPLOAD_PAGES = 3
 
 
 @operation(quota=1, read_only=True, idempotent=True)
@@ -108,7 +111,7 @@ def list_video_categories(*, region: str = "US") -> list[VideoCategory]:
     ]
 
 
-@operation(quota=1603, oauth=True)  # upload + up to 3 reads to copy the channel's usual settings
+@operation(quota=1607, oauth=True)  # upload + at most 7 reads to copy the channel's usual settings
 def upload_video(
     file: Path,
     *,
@@ -126,8 +129,8 @@ def upload_video(
 ) -> Video:
     """Upload a video file from disk (resumable, reports progress).
 
-    Category and languages left out are copied from your most recent public upload, so the video matches
-    the rest of your channel; with no public uploads, the category is 22 (People & Blogs).
+    Category and languages left out are copied from your most recent public upload (among your last 150),
+    so the video matches the rest of your channel; with none, the category is 22 (People & Blogs).
 
     Args:
         file: Path to the local video file.
@@ -160,7 +163,8 @@ def upload_video(
             "title": title,
             "description": description,
             "tags": _clean(tags or []),
-            **_like_recent_uploads(
+            "categoryId": "22",
+            **_copied_from_recent_uploads(
                 categoryId=category_id, defaultLanguage=language, defaultAudioLanguage=audio_language
             ),
         },
@@ -255,11 +259,8 @@ def update_video(
     return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
 
 
-_WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")
-
-
-def _like_recent_uploads(**given: str | None) -> dict[str, str]:
-    """The given snippet fields, with any left out copied from the user's most recent public upload that has them.
+def _copied_from_recent_uploads(**given: str | None) -> dict[str, str]:
+    """The given snippet fields, with any left out copied from the newest public upload that has them.
 
     Stands in for Studio's upload defaults, which YouTube doesn't apply to API uploads.
     """
@@ -269,25 +270,32 @@ def _like_recent_uploads(**given: str | None) -> dict[str, str]:
             for key in given.keys() - chosen.keys():
                 if snippet.get(key):
                     chosen[key] = snippet[key]
-    chosen.setdefault("categoryId", "22")
+            if len(chosen) == len(given):
+                break
     return chosen
 
 
-def _recent_public_snippets() -> list[dict]:
+def _recent_public_snippets() -> Iterator[dict]:
+    """Snippets of the user's public uploads, newest first, looking back at most RECENT_UPLOAD_PAGES pages."""
     youtube = client.oauth()
-    channel = one(youtube.channels().list(part="contentDetails", mine=True).execute(), "You have no YouTube channel.")
-    uploads = channel["contentDetails"]["relatedPlaylists"]["uploads"]
-    entries = (
-        youtube.playlistItems().list(part="contentDetails", playlistId=uploads, maxResults=API_PAGE_SIZE).execute()
-    )
-    ids = [entry["contentDetails"]["videoId"] for entry in entries.get("items", [])]
-    if not ids:
-        return []
-    found = youtube.videos().list(part="snippet,status", id=",".join(ids)).execute().get("items", [])
-    public = [video["snippet"] for video in found if video["status"].get("privacyStatus") == "public"]
-    return sorted(public, key=lambda snippet: snippet.get("publishedAt", ""), reverse=True)
+    request: dict[str, Any] = {
+        "part": "contentDetails",
+        "playlistId": my_uploads_playlist_id(),
+        "maxResults": API_PAGE_SIZE,
+    }
+    for _ in range(RECENT_UPLOAD_PAGES):
+        page = youtube.playlistItems().list(**request).execute()
+        ids = [entry["contentDetails"]["videoId"] for entry in page.get("items", [])]
+        if ids:
+            found = youtube.videos().list(part="snippet,status", id=",".join(ids)).execute().get("items", [])
+            public = [video["snippet"] for video in found if video["status"].get("privacyStatus") == "public"]
+            yield from sorted(public, key=lambda snippet: snippet.get("publishedAt", ""), reverse=True)
+        if not page.get("nextPageToken"):
+            return
+        request["pageToken"] = page["nextPageToken"]
 
 
+_WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")
 _WRITABLE_STATUS = (
     "privacyStatus",
     "publishAt",

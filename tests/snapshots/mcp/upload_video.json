@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Upload a video file from disk (resumable, reports progress).\n\nCategory and languages left out are copied from your most recent public upload, so the video matches\nthe rest of your channel; with no public uploads, the category is 22 (People & Blogs).\n\nQuota: 1603 units.",
+  "description": "Upload a video file from disk (resumable, reports progress).\n\nCategory and languages left out are copied from your most recent public upload (among your last 150),\nso the video matches the rest of your channel; with none, the category is 22 (People & Blogs).\n\nQuota: 1607 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
@@ -154,7 +154,8 @@
             "type": "null"
           }
         ],
-        "default": null
+        "default": null,
+        "description": "Language spoken in the video, e.g. en-US."
       },
       "category_id": {
         "anyOf": [
@@ -234,7 +235,8 @@
             "type": "null"
           }
         ],
-        "default": null
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
       },
       "paid_promotion": {
         "anyOf": [
