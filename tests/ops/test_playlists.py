@@ -3,7 +3,7 @@ import pytest
 from youtube_kit.core.errors import InvalidRequest, NotFound
 from youtube_kit.core.ops import playlists
 
-from ..fakes import CHANNEL_ID, playlist_item_resource, playlist_resource
+from ..fakes import CHANNEL_ID, playlist_item_resource, playlist_resource, video_item
 
 
 def test_list_playlist_items(api):
@@ -48,6 +48,25 @@ def test_create_playlist(api):
     assert (result.id, result.privacy) == ("PLnew", "unlisted")
 
 
+def test_create_playlist_copies_the_language_of_your_recent_uploads(api):
+    api.oauth.channels().list().execute.return_value = {
+        "items": [{"contentDetails": {"relatedPlaylists": {"uploads": "UU1"}}}]
+    }
+    api.oauth.playlistItems().list().execute.return_value = {"items": [{"contentDetails": {"videoId": "v1"}}]}
+    api.oauth.videos().list().execute.return_value = {"items": [video_item("v1", snippet={"defaultLanguage": "uk"})]}
+    api.oauth.playlists().insert().execute.return_value = playlist_resource()
+
+    playlists.create_playlist("Mine")
+    copied = api.oauth.playlists().insert.call_args.kwargs["body"]["snippet"]
+    api.oauth.playlistItems().list.reset_mock()
+    playlists.create_playlist("Mine", language="en")
+    given = api.oauth.playlists().insert.call_args.kwargs["body"]["snippet"]
+
+    assert copied["defaultLanguage"] == "uk"
+    assert given["defaultLanguage"] == "en"
+    api.oauth.playlistItems().list.assert_not_called()  # nothing to copy when the language is given
+
+
 def test_list_playlists_defaults_to_mine(api):
     api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
 
@@ -90,6 +109,10 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
     assert call["part"] == "snippet,status"
     assert call["body"]["status"] == {"privacyStatus": "private", "podcastStatus": "enabled"}
     assert call["body"]["snippet"]["title"] == "Mix"
+
+    playlists.update_playlist("PL1", language="de")
+
+    assert api.oauth.playlists().update.call_args.kwargs["body"]["snippet"]["defaultLanguage"] == "de"
 
 
 def test_remove_from_playlist_removes_every_occurrence(api):

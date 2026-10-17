@@ -164,7 +164,7 @@ def upload_video(
             "description": description,
             "tags": _clean(tags or []),
             "categoryId": "22",
-            **_copied_from_recent_uploads(
+            **copied_from_recent_uploads(
                 categoryId=category_id, defaultLanguage=language, defaultAudioLanguage=audio_language
             ),
         },
@@ -259,7 +259,7 @@ def update_video(
     return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
 
 
-def _copied_from_recent_uploads(**given: str | None) -> dict[str, str]:
+def copied_from_recent_uploads(**given: str | None) -> dict[str, str]:
     """The given snippet fields, with any left out copied from the newest public upload that has them.
 
     Stands in for Studio's upload defaults, which YouTube doesn't apply to API uploads.

@@ -22,6 +22,18 @@
         "default": null,
         "description": "New description."
       },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
+      },
       "my_channel": {
         "anyOf": [
           {
@@ -110,6 +122,18 @@
           }
         ],
         "default": null
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language of the title and description, e.g. en-US."
       },
       "privacy": {
         "anyOf": [

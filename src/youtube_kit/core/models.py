@@ -123,6 +123,7 @@ class Playlist(BaseModel):
     url: str
     title: str
     description: str | None = None
+    language: str | None = Field(None, description="Language of the title and description, e.g. en-US.")
     channel_id: str | None = None
     published_at: datetime | None = None
     privacy: Privacy | None = None
