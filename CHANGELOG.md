@@ -5,6 +5,16 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.5.0](https://github.com/eukosh/youtube-kit/compare/v0.4.0...v0.5.0) (2026-10-17)
+
+
+### Added
+
+* answer YouTube's paid promotion and AI use questions on upload and update ([0ae14b7](https://github.com/eukosh/youtube-kit/commit/0ae14b7a8a841c49efbb65697bb79a1d0e24df7a))
+* link your own videos to YouTube Studio ([#5](https://github.com/eukosh/youtube-kit/issues/5)) ([363636e](https://github.com/eukosh/youtube-kit/commit/363636ef525c1129af442adf923a5a76e8108097))
+* set a playlist's language, copied from your uploads when creating one ([0ae14b7](https://github.com/eukosh/youtube-kit/commit/0ae14b7a8a841c49efbb65697bb79a1d0e24df7a))
+* uploads copy category and languages from your recent public uploads, with --language and --audio-language to override ([0ae14b7](https://github.com/eukosh/youtube-kit/commit/0ae14b7a8a841c49efbb65697bb79a1d0e24df7a))
+
 ## [0.4.0](https://github.com/eukosh/youtube-kit/compare/v0.3.0...v0.4.0) (2026-10-17)
 
 
