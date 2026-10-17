@@ -5,7 +5,7 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
-## [0.2.0](https://github.com/eukosh/youtube-kit/releases/tag/v0.2.0) (2026-10-16)
+## [0.2.0](https://github.com/eukosh/youtube-kit/releases/tag/v0.2.0) (2026-10-17)
 
 First public release. (0.1.0 was an unpublished, MCP-only predecessor.)
 
