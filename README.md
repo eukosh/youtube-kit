@@ -1,8 +1,8 @@
 # youtube-kit
 
 [![CI](https://github.com/eukosh/youtube-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/eukosh/youtube-kit/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/youtube-kit)](https://pypi.org/project/youtube-kit/)
-[![Python](https://img.shields.io/pypi/pyversions/youtube-kit)](https://pypi.org/project/youtube-kit/)
+[![PyPI](https://img.shields.io/pypi/v/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
+[![Python](https://img.shields.io/pypi/pyversions/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/eukosh/youtube-kit/blob/main/LICENSE)
 
 Most YouTube CLIs and MCP servers do one thing. They upload, or they pull analytics, or they search and stop there. `ytk` does 44 things, which is most of what the YouTube Data and Analytics APIs allow for a channel, and it prints JSON. `ytk mcp` serves the same 44 operations to MCP clients.
