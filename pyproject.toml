@@ -1,6 +1,6 @@
 [project]
 name = "youtube-kit"
-version = "0.2.0"
+version = "0.3.0"
 description = "A CLI (ytk) and MCP server for the YouTube Data and Analytics APIs, built for agents and humans."
 readme = "README.md"
 requires-python = ">=3.12"
