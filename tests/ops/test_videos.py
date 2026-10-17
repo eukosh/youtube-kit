@@ -153,6 +153,7 @@ def test_upload_video_reports_progress(api, tmp_path):
     assert body["status"]["containsSyntheticMedia"] is False  # disclosures default to no
     assert body["paidProductPlacementDetails"] == {"hasPaidProductPlacement": False}
     assert result.paid_promotion is False  # from what was sent: YouTube's reply leaves it out
+    assert result.ai_content is False
 
 
 def _recent_uploads(api, *videos_):
@@ -222,6 +223,7 @@ def test_upload_video_given_everything_looks_nothing_up(api, tmp_path):
     snippet = _upload(api, tmp_path, category_id="28", language="en", audio_language="en")
 
     assert snippet["categoryId"] == "28"
+    api.oauth.channels().list.assert_not_called()
     api.oauth.playlistItems().list.assert_not_called()
 
 

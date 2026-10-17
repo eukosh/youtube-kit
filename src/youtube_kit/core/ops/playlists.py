@@ -8,8 +8,7 @@ from ..models import Deleted, Page, Playlist, PlaylistEntry, PlaylistImage, Play
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
 from ._common import changes, delete_if_present, image_upload, one, pick, playlist_url, to_int, unique_ids, video_url
-from .channels import my_channel_id, owner_or
-from .videos import copied_from_recent_uploads
+from .channels import copied_from_recent_uploads, my_channel_id, owner_or
 
 _PARTS = "snippet,status,contentDetails"
 
@@ -83,7 +82,7 @@ def list_playlist_items(
     )
 
 
-@operation(quota=57, oauth=True)  # insert + at most 7 reads to copy the language
+@operation(quota=57, oauth=True)  # insert + at most 7 reads in copied_from_recent_uploads
 def create_playlist(
     title: str, *, description: str = "", language: str | None = None, privacy: Privacy = "private"
 ) -> Playlist:

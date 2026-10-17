@@ -44,7 +44,7 @@ def test_create_playlist(api):
         "snippet": {"title": "Mine"},
         "status": {"privacyStatus": "unlisted"},
     }
-    result = playlists.create_playlist("Mine", privacy="unlisted")
+    result = playlists.create_playlist("Mine", language="en", privacy="unlisted")
     assert (result.id, result.privacy) == ("PLnew", "unlisted")
 
 
@@ -58,13 +58,15 @@ def test_create_playlist_copies_the_language_of_your_recent_uploads(api):
 
     playlists.create_playlist("Mine")
     copied = api.oauth.playlists().insert.call_args.kwargs["body"]["snippet"]
+    api.oauth.channels().list.reset_mock()
     api.oauth.playlistItems().list.reset_mock()
     playlists.create_playlist("Mine", language="en")
     given = api.oauth.playlists().insert.call_args.kwargs["body"]["snippet"]
 
     assert copied["defaultLanguage"] == "uk"
     assert given["defaultLanguage"] == "en"
-    api.oauth.playlistItems().list.assert_not_called()  # nothing to copy when the language is given
+    api.oauth.channels().list.assert_not_called()  # nothing to copy when the language is given
+    api.oauth.playlistItems().list.assert_not_called()
 
 
 def test_list_playlists_defaults_to_mine(api):

@@ -1,7 +1,6 @@
 import itertools
 import re
 import time
-from collections.abc import Iterator
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -26,14 +25,12 @@ from ._common import (
     unique_ids,
     video_url,
 )
-from .channels import my_channel_id, my_uploads_playlist_id
+from .channels import copied_from_recent_uploads, my_channel_id
 
 # Multiple of 256 KiB (API requirement); small enough to report progress regularly.
 UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024
 UPLOAD_RETRIES = 5
 POLL_SECONDS = 10
-# How far back upload looks for a public video to copy category and languages from: 3 x 50 uploads.
-RECENT_UPLOAD_PAGES = 3
 
 
 @operation(quota=1, read_only=True, idempotent=True)
@@ -111,7 +108,7 @@ def list_video_categories(*, region: str = "US") -> list[VideoCategory]:
     ]
 
 
-@operation(quota=1607, oauth=True)  # upload + at most 7 reads to copy the channel's usual settings
+@operation(quota=1607, oauth=True)  # upload + at most 7 reads in copied_from_recent_uploads
 def upload_video(
     file: Path,
     *,
@@ -183,7 +180,7 @@ def upload_video(
             progress.report(chunk.resumable_progress, total)
     progress.report(total, total)
     # YouTube's reply leaves out paidProductPlacementDetails even though it applied it.
-    return _video(response, mine=True).model_copy(update={"paid_promotion": paid_promotion})
+    return _video(response, mine=True).model_copy(update={"paid_promotion": paid_promotion, "ai_content": ai_content})
 
 
 @operation(quota=51, destructive=True, idempotent=True, oauth=True)
@@ -257,42 +254,6 @@ def update_video(
         body["paidProductPlacementDetails"] = {"hasPaidProductPlacement": paid_promotion}
         parts += ",paidProductPlacementDetails"
     return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
-
-
-def copied_from_recent_uploads(**given: str | None) -> dict[str, str]:
-    """The given snippet fields, with any left out copied from the newest public upload that has them.
-
-    Stands in for Studio's upload defaults, which YouTube doesn't apply to API uploads.
-    """
-    chosen = {key: value for key, value in given.items() if value is not None}
-    if len(chosen) < len(given):
-        for snippet in _recent_public_snippets():
-            for key in given.keys() - chosen.keys():
-                if snippet.get(key):
-                    chosen[key] = snippet[key]
-            if len(chosen) == len(given):
-                break
-    return chosen
-
-
-def _recent_public_snippets() -> Iterator[dict]:
-    """Snippets of the user's public uploads, newest first, looking back at most RECENT_UPLOAD_PAGES pages."""
-    youtube = client.oauth()
-    request: dict[str, Any] = {
-        "part": "contentDetails",
-        "playlistId": my_uploads_playlist_id(),
-        "maxResults": API_PAGE_SIZE,
-    }
-    for _ in range(RECENT_UPLOAD_PAGES):
-        page = youtube.playlistItems().list(**request).execute()
-        ids = [entry["contentDetails"]["videoId"] for entry in page.get("items", [])]
-        if ids:
-            found = youtube.videos().list(part="snippet,status", id=",".join(ids)).execute().get("items", [])
-            public = [video["snippet"] for video in found if video["status"].get("privacyStatus") == "public"]
-            yield from sorted(public, key=lambda snippet: snippet.get("publishedAt", ""), reverse=True)
-        if not page.get("nextPageToken"):
-            return
-        request["pageToken"] = page["nextPageToken"]
 
 
 _WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")
