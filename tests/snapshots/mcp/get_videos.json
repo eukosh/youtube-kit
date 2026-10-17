@@ -195,6 +195,17 @@
               ],
               "default": null
             },
+            "studio_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "tags": {
               "anyOf": [
                 {

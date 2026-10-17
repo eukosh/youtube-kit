@@ -37,6 +37,7 @@ class VideoStats(BaseModel):
 class Video(BaseModel):
     id: str
     url: str
+    studio_url: str | None = None  # only for videos on the user's own channels
     title: str | None = None
     description: str | None = None
     channel_id: str | None = None

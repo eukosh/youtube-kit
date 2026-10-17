@@ -6,7 +6,7 @@ from youtube_kit.core import progress
 from youtube_kit.core.errors import Forbidden, InvalidRequest, NotFound, TimedOut
 from youtube_kit.core.ops import videos
 
-from ..fakes import video_item
+from ..fakes import video_item, write_login
 
 
 def test_get_videos_parses_urls_dedupes_and_types_stats(api):
@@ -18,6 +18,17 @@ def test_get_videos_parses_urls_dedupes_and_types_stats(api):
     assert video.stats.views == 1000
     assert video.duration_seconds == 3723
     assert video.published_at.year == 2026
+
+
+def test_get_videos_links_to_studio_only_for_your_channels(api, tmp_path):
+    write_login(tmp_path / "tokens")
+    theirs = video_item("theirs00000", snippet={"channelId": "UC" + "b" * 22})
+    api.public.videos().list().execute.return_value = {"items": [video_item(), theirs]}
+
+    mine, other = videos.get_videos(["dQw4w9WgXcQ", "theirs00000"])
+
+    assert mine.studio_url == "https://studio.youtube.com/video/dQw4w9WgXcQ/edit"
+    assert other.studio_url is None
 
 
 def test_get_videos_batches_by_50(api):
@@ -102,6 +113,7 @@ def test_upload_video_reports_progress(api, tmp_path):
         result = videos.upload_video(file, title="Hi", publish_at="2026-06-01T12:00:00+00:00")
 
     assert result.id == "NEWVIDEO123"
+    assert result.studio_url == "https://studio.youtube.com/video/NEWVIDEO123/edit"
     assert reports == [(400, 1000), (1000, 1000)]
     body = api.oauth.videos().insert.call_args.kwargs["body"]
     assert body["status"]["publishAt"] == "2026-06-01T12:00:00Z"
