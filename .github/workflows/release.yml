@@ -62,6 +62,8 @@ jobs:
 
   publish:
     needs: build
+    # A skipped release-please job (manual runs) skips every job downstream unless the condition is explicit.
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -78,6 +80,7 @@ jobs:
 
   attach:
     needs: [build, publish]
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
