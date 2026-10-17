@@ -108,14 +108,16 @@ def list_video_categories(*, region: str = "US") -> list[VideoCategory]:
     ]
 
 
-@operation(quota=1600, oauth=True)
+@operation(quota=1603, oauth=True)  # upload + up to 3 reads to copy the channel's usual settings
 def upload_video(
     file: Path,
     *,
     title: str,
     description: str = "",
     tags: list[str] | None = None,
-    category_id: str = "22",
+    category_id: str | None = None,
+    language: str | None = None,
+    audio_language: str | None = None,
     privacy: Privacy = "private",
     publish_at: str | None = None,
     made_for_kids: bool = False,
@@ -124,12 +126,17 @@ def upload_video(
 ) -> Video:
     """Upload a video file from disk (resumable, reports progress).
 
+    Category and languages left out are copied from your most recent public upload, so the video matches
+    the rest of your channel; with no public uploads, the category is 22 (People & Blogs).
+
     Args:
         file: Path to the local video file.
         title: Video title.
         description: Video description.
         tags: Keyword tags.
-        category_id: Category ID (see the video categories listing). 22 is People & Blogs.
+        category_id: Category ID (see the video categories listing).
+        language: Language of the title and description, e.g. en-US.
+        audio_language: Language spoken in the video, e.g. en-US.
         privacy: Privacy status. Must be private when publish_at is set.
         publish_at: Schedule publication at this date or datetime; YouTube makes the video public then.
         made_for_kids: Whether the video is made for kids (COPPA).
@@ -149,7 +156,14 @@ def upload_video(
             raise InvalidRequest("publish_at requires privacy='private'.")
         status["publishAt"] = parse.timestamp(publish_at)
     body = {
-        "snippet": {"title": title, "description": description, "tags": _clean(tags or []), "categoryId": category_id},
+        "snippet": {
+            "title": title,
+            "description": description,
+            "tags": _clean(tags or []),
+            **_like_recent_uploads(
+                categoryId=category_id, defaultLanguage=language, defaultAudioLanguage=audio_language
+            ),
+        },
         "status": status,
         "paidProductPlacementDetails": {"hasPaidProductPlacement": paid_promotion},
     }
@@ -176,6 +190,8 @@ def update_video(
     description: str | None = None,
     tags: list[str] | None = None,
     category_id: str | None = None,
+    language: str | None = None,
+    audio_language: str | None = None,
     privacy: Privacy | None = None,
     publish_at: str | None = None,
     made_for_kids: bool | None = None,
@@ -190,6 +206,8 @@ def update_video(
         description: New description.
         tags: New tags, replacing the current ones. An empty list removes all tags.
         category_id: New category ID (see the video categories listing).
+        language: Language of the title and description, e.g. en-US.
+        audio_language: Language spoken in the video, e.g. en-US.
         privacy: New privacy status. Making a scheduled video public or unlisted cancels the schedule.
         publish_at: Schedule publication at this date or datetime. The video must end up private.
         made_for_kids: Whether the video is made for kids (COPPA).
@@ -210,6 +228,8 @@ def update_video(
             description=description,
             tags=None if tags is None else _clean(tags),
             categoryId=category_id,
+            defaultLanguage=language,
+            defaultAudioLanguage=audio_language,
         )
     )
     if privacy is not None:
@@ -235,7 +255,39 @@ def update_video(
     return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
 
 
-_WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage")
+_WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")
+
+
+def _like_recent_uploads(**given: str | None) -> dict[str, str]:
+    """The given snippet fields, with any left out copied from the user's most recent public upload that has them.
+
+    Stands in for Studio's upload defaults, which YouTube doesn't apply to API uploads.
+    """
+    chosen = {key: value for key, value in given.items() if value is not None}
+    if len(chosen) < len(given):
+        for snippet in _recent_public_snippets():
+            for key in given.keys() - chosen.keys():
+                if snippet.get(key):
+                    chosen[key] = snippet[key]
+    chosen.setdefault("categoryId", "22")
+    return chosen
+
+
+def _recent_public_snippets() -> list[dict]:
+    youtube = client.oauth()
+    channel = one(youtube.channels().list(part="contentDetails", mine=True).execute(), "You have no YouTube channel.")
+    uploads = channel["contentDetails"]["relatedPlaylists"]["uploads"]
+    entries = (
+        youtube.playlistItems().list(part="contentDetails", playlistId=uploads, maxResults=API_PAGE_SIZE).execute()
+    )
+    ids = [entry["contentDetails"]["videoId"] for entry in entries.get("items", [])]
+    if not ids:
+        return []
+    found = youtube.videos().list(part="snippet,status", id=",".join(ids)).execute().get("items", [])
+    public = [video["snippet"] for video in found if video["status"].get("privacyStatus") == "public"]
+    return sorted(public, key=lambda snippet: snippet.get("publishedAt", ""), reverse=True)
+
+
 _WRITABLE_STATUS = (
     "privacyStatus",
     "publishAt",
@@ -365,6 +417,8 @@ def _video(item: dict, *, mine: bool = False) -> Video:
         published_at=snippet.get("publishedAt"),
         tags=snippet.get("tags"),
         category_id=snippet.get("categoryId"),
+        language=snippet.get("defaultLanguage"),
+        audio_language=snippet.get("defaultAudioLanguage"),
         duration=details.get("duration"),
         duration_seconds=_duration_seconds(details.get("duration")),
         stats=None

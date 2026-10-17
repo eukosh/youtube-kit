@@ -47,6 +47,8 @@ class Video(BaseModel):
     published_at: datetime | None = None
     tags: list[str] | None = None
     category_id: str | None = None
+    language: str | None = None
+    audio_language: str | None = None
     duration: str | None = None
     duration_seconds: int | None = None
     stats: VideoStats | None = None

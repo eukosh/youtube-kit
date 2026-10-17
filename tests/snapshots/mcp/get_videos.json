@@ -52,6 +52,17 @@
               "default": null,
               "description": "Declared to contain realistic AI-made content, as set by this upload or update. YouTube doesn't report it when reading a video."
             },
+            "audio_language": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "category_id": {
               "anyOf": [
                 {
@@ -120,6 +131,17 @@
             },
             "id": {
               "type": "string"
+            },
+            "language": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             },
             "paid_promotion": {
               "anyOf": [
