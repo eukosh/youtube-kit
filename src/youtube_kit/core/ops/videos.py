@@ -48,7 +48,10 @@ def get_videos(videos: list[str]) -> list[Video]:
     found: list[Video] = []
     for batch in itertools.batched(ids, API_PAGE_SIZE):
         response = (
-            client.public().videos().list(part="snippet,contentDetails,statistics,status", id=",".join(batch)).execute()
+            client.public()
+            .videos()
+            .list(part="snippet,contentDetails,statistics,status,paidProductPlacementDetails", id=",".join(batch))
+            .execute()
         )
         found.extend(
             _video(item, mine=item.get("snippet", {}).get("channelId") in logged_in)
@@ -116,6 +119,8 @@ def upload_video(
     privacy: Privacy = "private",
     publish_at: str | None = None,
     made_for_kids: bool = False,
+    paid_promotion: bool = False,
+    ai_content: bool = False,
 ) -> Video:
     """Upload a video file from disk (resumable, reports progress).
 
@@ -128,9 +133,17 @@ def upload_video(
         privacy: Privacy status. Must be private when publish_at is set.
         publish_at: Schedule publication at this date or datetime; YouTube makes the video public then.
         made_for_kids: Whether the video is made for kids (COPPA).
+        paid_promotion: Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.
+        ai_content: Whether AI made realistic content: a real person saying or doing something they didn't,
+            altered footage of a real event or place, a realistic scene that didn't happen, or music that's
+            the video's focus. Not for scripts, captions, or obviously unreal content.
     """
     path = existing_file(file)
-    status: dict[str, Any] = {"privacyStatus": privacy, "selfDeclaredMadeForKids": made_for_kids}
+    status: dict[str, Any] = {
+        "privacyStatus": privacy,
+        "selfDeclaredMadeForKids": made_for_kids,
+        "containsSyntheticMedia": ai_content,
+    }
     if publish_at:
         if privacy != "private":
             raise InvalidRequest("publish_at requires privacy='private'.")
@@ -138,9 +151,12 @@ def upload_video(
     body = {
         "snippet": {"title": title, "description": description, "tags": _clean(tags or []), "categoryId": category_id},
         "status": status,
+        "paidProductPlacementDetails": {"hasPaidProductPlacement": paid_promotion},
     }
     media = MediaFileUpload(str(path), chunksize=UPLOAD_CHUNK_BYTES, resumable=True)
-    request = client.oauth().videos().insert(part="snippet,status", body=body, media_body=media)
+    request = (
+        client.oauth().videos().insert(part="snippet,status,paidProductPlacementDetails", body=body, media_body=media)
+    )
     total = path.stat().st_size
     response = None
     while response is None:
@@ -148,7 +164,8 @@ def upload_video(
         if chunk is not None:
             progress.report(chunk.resumable_progress, total)
     progress.report(total, total)
-    return _video(response, mine=True)
+    # YouTube's reply leaves out paidProductPlacementDetails even though it applied it.
+    return _video(response, mine=True).model_copy(update={"paid_promotion": paid_promotion})
 
 
 @operation(quota=51, destructive=True, idempotent=True, oauth=True)
@@ -162,6 +179,8 @@ def update_video(
     privacy: Privacy | None = None,
     publish_at: str | None = None,
     made_for_kids: bool | None = None,
+    paid_promotion: bool | None = None,
+    ai_content: bool | None = None,
 ) -> Video:
     """Change a video's metadata. Only the fields you pass change; the rest keep their values.
 
@@ -174,6 +193,10 @@ def update_video(
         privacy: New privacy status. Making a scheduled video public or unlisted cancels the schedule.
         publish_at: Schedule publication at this date or datetime. The video must end up private.
         made_for_kids: Whether the video is made for kids (COPPA).
+        paid_promotion: Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.
+        ai_content: Whether AI made realistic content: a real person saying or doing something they didn't,
+            altered footage of a real event or place, a realistic scene that didn't happen, or music that's
+            the video's focus. Not for scripts, captions, or obviously unreal content.
     """
     video_id = parse.video_id(video)
     youtube = client.oauth()
@@ -193,6 +216,8 @@ def update_video(
         status["privacyStatus"] = privacy
     if made_for_kids is not None:
         status["selfDeclaredMadeForKids"] = made_for_kids
+    if ai_content is not None:
+        status["containsSyntheticMedia"] = ai_content
     if publish_at is not None:
         if status["privacyStatus"] != "private":
             raise InvalidRequest("publish_at requires the video to be private.")
@@ -202,7 +227,12 @@ def update_video(
         status.pop("publishAt", None)
 
     body = {"id": video_id, "snippet": snippet, "status": status}
-    return _video(youtube.videos().update(part="snippet,status", body=body).execute(), mine=True)
+    parts = "snippet,status"
+    # Sent only when asked: YouTube reports an unanswered question as false, and writing that back answers it.
+    if paid_promotion is not None:
+        body["paidProductPlacementDetails"] = {"hasPaidProductPlacement": paid_promotion}
+        parts += ",paidProductPlacementDetails"
+    return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
 
 
 _WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage")
@@ -346,4 +376,6 @@ def _video(item: dict, *, mine: bool = False) -> Video:
         ),
         privacy=status.get("privacyStatus"),
         publish_at=status.get("publishAt"),
+        paid_promotion=item.get("paidProductPlacementDetails", {}).get("hasPaidProductPlacement"),
+        ai_content=status.get("containsSyntheticMedia"),
     )

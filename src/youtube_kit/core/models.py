@@ -52,6 +52,12 @@ class Video(BaseModel):
     stats: VideoStats | None = None
     privacy: Privacy | None = None
     publish_at: datetime | None = None
+    paid_promotion: bool | None = Field(None, description="Declared to include paid promotion.")
+    ai_content: bool | None = Field(
+        None,
+        description="Declared to contain realistic AI-made content, as set by this upload or update. "
+        "YouTube doesn't report it when reading a video.",
+    )
 
 
 class ChannelStats(BaseModel):

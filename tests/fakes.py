@@ -35,6 +35,7 @@ def video_item(video_id: str = "dQw4w9WgXcQ", **overrides) -> dict:
         "contentDetails": {"duration": "PT1H2M3S"},
         "statistics": {"viewCount": "1000", "likeCount": "10", "commentCount": "1"},
         "status": {"privacyStatus": "public"},
+        "paidProductPlacementDetails": {"hasPaidProductPlacement": False},
     }
     item.update(overrides)
     return item

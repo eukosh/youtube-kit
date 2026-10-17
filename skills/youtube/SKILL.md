@@ -80,6 +80,8 @@ Commands that change things (`video upload/update/thumbnail/rate/delete`, `playl
 
 After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards, subtitles). `studio_url` is set only for videos on channels the user is logged in to here.
 
+`video upload` answers YouTube's required disclosures with no unless told otherwise: `--paid-promotion` (sponsorship, product placement) and `--ai-content` (realistic AI-made people, events or scenes; see `--help`). Don't ask about them on every upload. Pass one when the user mentions a sponsor or AI-generated footage, and ask only when the request suggests it but leaves it unclear.
+
 `video delete`, `playlist delete` and `comment delete` exit 8 on the first call with what would be deleted. `--confirm` carries the user's yes for that exact target: show `details` to the user, and after they approve run `details.rerun`. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 
 ## Quota

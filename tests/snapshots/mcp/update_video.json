@@ -10,6 +10,18 @@
   "input_schema": {
     "additionalProperties": false,
     "properties": {
+      "ai_content": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Whether AI made realistic content: a real person saying or doing something they didn't,\naltered footage of a real event or place, a realistic scene that didn't happen, or music that's\nthe video's focus. Not for scripts, captions, or obviously unreal content."
+      },
       "category_id": {
         "anyOf": [
           {
@@ -57,6 +69,18 @@
         ],
         "default": null,
         "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+      },
+      "paid_promotion": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Whether the video includes paid promotion: a sponsorship, product placement, or endorsement."
       },
       "privacy": {
         "anyOf": [
@@ -126,6 +150,18 @@
   },
   "output_schema": {
     "properties": {
+      "ai_content": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Declared to contain realistic AI-made content, as set by this upload or update. YouTube doesn't report it when reading a video."
+      },
       "category_id": {
         "anyOf": [
           {
@@ -194,6 +230,18 @@
       },
       "id": {
         "type": "string"
+      },
+      "paid_promotion": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Declared to include paid promotion."
       },
       "privacy": {
         "anyOf": [

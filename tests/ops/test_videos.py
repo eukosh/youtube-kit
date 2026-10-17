@@ -19,6 +19,8 @@ def test_get_videos_parses_urls_dedupes_and_types_stats(api):
     assert video.duration_seconds == 3723
     assert video.published_at.year == 2026
     assert video.studio_url is None  # not logged in to its channel
+    assert video.paid_promotion is False
+    assert video.ai_content is None  # YouTube doesn't return it on reads
 
 
 def test_get_videos_links_to_studio_only_for_your_channels(api, tmp_path):
@@ -89,6 +91,23 @@ def test_update_video_changes_only_given_fields(api):
     assert result.studio_url == "https://studio.youtube.com/video/dQw4w9WgXcQ/edit"
 
 
+def test_update_video_answers_disclosures_only_when_given(api):
+    api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
+    api.oauth.videos().update().execute.return_value = video_item()
+
+    videos.update_video("dQw4w9WgXcQ", title="New")
+    untouched = api.oauth.videos().update.call_args.kwargs
+    videos.update_video("dQw4w9WgXcQ", paid_promotion=True, ai_content=False)
+    answered = api.oauth.videos().update.call_args.kwargs
+
+    assert untouched["part"] == "snippet,status"
+    assert "paidProductPlacementDetails" not in untouched["body"]
+    assert "containsSyntheticMedia" not in untouched["body"]["status"]
+    assert answered["part"] == "snippet,status,paidProductPlacementDetails"
+    assert answered["body"]["paidProductPlacementDetails"] == {"hasPaidProductPlacement": True}
+    assert answered["body"]["status"]["containsSyntheticMedia"] is False
+
+
 def test_update_video_rejects_schedule_on_public_video(api):
     api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
     with pytest.raises(InvalidRequest, match="private"):
@@ -119,6 +138,9 @@ def test_upload_video_reports_progress(api, tmp_path):
     assert reports == [(400, 1000), (1000, 1000)]
     body = api.oauth.videos().insert.call_args.kwargs["body"]
     assert body["status"]["publishAt"] == "2026-06-01T12:00:00Z"
+    assert body["status"]["containsSyntheticMedia"] is False  # disclosures default to no
+    assert body["paidProductPlacementDetails"] == {"hasPaidProductPlacement": False}
+    assert result.paid_promotion is False  # from what was sent: YouTube's reply leaves it out
 
 
 def test_upload_video_validates_before_calling_the_api(api, tmp_path):
