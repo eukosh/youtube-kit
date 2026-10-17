@@ -1,7 +1,9 @@
 """Both adapters expose every core operation, so neither surface silently falls behind."""
 
 import inspect
+import re
 from collections.abc import Callable, Iterator
+from pathlib import Path
 
 from youtube_kit import core
 from youtube_kit.cli import app
@@ -16,6 +18,26 @@ def _cli_commands(cli_app) -> Iterator[Callable]:
         if sub.default_command is not None:
             yield sub.default_command
         yield from _cli_commands(sub)
+
+
+def _cli_paths(cli_app, prefix: tuple[str, ...] = ()) -> Iterator[tuple[str, ...]]:
+    for name in cli_app:
+        if name.startswith("-"):
+            continue
+        sub = cli_app[name]
+        if sub.default_command is not None:
+            yield (*prefix, name)
+        yield from _cli_paths(sub, (*prefix, name))
+
+
+def test_skill_command_map_lists_every_command():
+    skill = (Path(__file__).parents[1] / "skills/youtube/SKILL.md").read_text()
+    command_map = skill.split("```", 2)[1].splitlines()
+    for *groups, verb in _cli_paths(app):
+        if (*groups, verb) == ("mcp",):  # the skill drives the CLI; MCP clients don't read it
+            continue
+        prefix = " ".join(["ytk", *groups]) + " "
+        assert any(prefix in line and re.search(rf"\b{verb}\b", line) for line in command_map), (groups, verb)
 
 
 def test_every_operation_is_a_cli_command():

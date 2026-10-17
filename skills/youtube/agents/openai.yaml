@@ -1,0 +1,6 @@
+interface:
+  display_name: "YouTube (ytk)"
+  short_description: "Read YouTube, manage your channel, pull analytics"
+  default_prompt: "Use $youtube to show my 10 most-viewed videos of the last 28 days."
+policy:
+  allow_implicit_invocation: true

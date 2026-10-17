@@ -1,11 +1,14 @@
 ---
 name: youtube
-description: YouTube through the `ytk` CLI. Use for any task that reads YouTube data (search, videos, channels, playlists, comments, activity) or changes the user's own channel (upload, edit, delete, thumbnails, playlists, comments and moderation, branding, subscriptions, ratings), or reports its analytics.
+description: YouTube through the `ytk` CLI. Use when a task reads YouTube (search, videos, channels, playlists, comments), changes the user's own channel (uploads, metadata, playlists, comment moderation, branding, subscriptions, ratings), asks for channel analytics, or needs data behind a youtube.com or youtu.be link.
+compatibility: Needs the ytk CLI (uv tool install youtube-kit) and YouTube API credentials.
 ---
 
 # YouTube via `ytk`
 
-`ytk` wraps the YouTube Data and Analytics APIs. Commands:
+`ytk` wraps the YouTube Data and Analytics APIs and prints JSON. If it isn't on PATH, install it with `uv tool install youtube-kit`, or run one-off commands as `uvx --from youtube-kit ytk ...`. Credentials setup (API key, OAuth login) is in the [README](https://github.com/eukosh/youtube-kit#credentials); `ytk auth status` shows what is configured.
+
+Commands:
 
 ```
 ytk search QUERY [--since D]
@@ -37,11 +40,11 @@ ytk auth status | login | logout
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
 
-`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. Options are flags (`--limit 20`); list options repeat (`--tags a --tags b`; `--empty-tags` clears). In usage lines, `[ARGS]` is the optional positional named in the parameter table. A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
+`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. List options repeat (`--tags a --tags b`; `--empty-tags` clears). In usage lines, `[ARGS]` is the optional positional named in the parameter table. A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
 
 ## Output contract
 
-- stdout: exactly one JSON document, null fields omitted. Pipe it into `jq`.
+- stdout: exactly one JSON document, null fields omitted.
 - Listings are `{"items": [...], "next_page_token": "..."}`. `--limit N` fetches across pages for you; pass `--page-token` to continue past it.
 - Failure: stdout is empty, stderr is `{"error": {"type", "message", "details"?}}`, and the exit code names the type:
 
@@ -50,23 +53,19 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 | 1 | `error` | unexpected failure, or the user declined a delete; report the message |
 | 2 | `invalid_request` / `usage` | fix the arguments (message says which) |
 | 3 | `not_found` | the ID or handle doesn't exist or isn't visible |
-| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser) or set `YOUTUBE_API_KEY`; also when an older login lacks analytics access |
+| 4 | `not_authorized` | ask the user to run `ytk auth login` (interactive, opens a browser; setup is in the README linked above). For public data an exported `YOUTUBE_API_KEY` also works. Also when an older login lacks analytics access |
 | 5 | `quota_exceeded` | stop; quota resets at midnight Pacific Time |
 | 6 | `forbidden` | YouTube refuses (comments disabled, unverified channel for thumbnails, …) |
 | 7 | `network` | retry once |
-| 8 | `confirmation_required` | a delete needs approval: show `details` to the user, and only after they approve run `details.rerun` |
+| 8 | `confirmation_required` | a delete needs approval: see Changing the user's channel |
 | 9 | `protected` | the video is past the delete protection limits; stop and give the user `details.studio_url` |
 | 10 | `timeout` | `video status --wait` ran out of time; processing continues, check again later |
 
-## Deletes
+## Changing the user's channel
 
-`video delete`, `playlist delete` and `comment delete` never delete on the first call: they exit 8 with what would be deleted. Never add `--confirm` on your own initiative; it exists so the user's approval names the exact target. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
+Commands that change things (`video upload/update/thumbnail/rate/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`, `channel update/banner`, `channel watermark set/remove`, `channel section add/update/delete`, `subscription add/remove`) act on the user's real, public channel. Run one when the user asked for that change. When you picked the target or wrote the content yourself (a title, a reply, which comments to reject), show it and get a yes first.
 
-To make Claude Code ask before every delete, add to `.claude/settings.json`:
-
-```json
-{"permissions": {"ask": ["Bash(ytk video delete:*)", "Bash(ytk playlist delete:*)", "Bash(ytk comment delete:*)"]}}
-```
+`video delete`, `playlist delete` and `comment delete` exit 8 on the first call with what would be deleted. `--confirm` carries the user's yes for that exact target: show `details` to the user, and after they approve run `details.rerun`. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 
 ## Quota
 
@@ -92,5 +91,3 @@ ytk video get URL1 URL2 | jq '.[] | select(.duration_seconds > 1200) | .url'
 id=$(ytk video upload clip.mp4 --title "Launch" --publish-at 2026-07-01T15:00:00Z | jq -r .id)
 ytk playlist add PLxxxx "$id"
 ```
-
-Commands that change things (`video upload/update/thumbnail/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`, `channel update/banner`, `channel watermark set/remove`, `channel section add/update/delete`, `subscription add/remove`, `video rate`) act on the user's real account: confirm with the user before running them.
