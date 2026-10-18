@@ -220,6 +220,9 @@ def update_video(
             out then may clear it.
     """
     video_id = parse.video_id(video)
+    fields = (title, description, tags, category_id, language, audio_language, privacy, publish_at)
+    if all(field is None for field in (*fields, made_for_kids, paid_promotion, ai_content)):
+        raise InvalidRequest("Pass at least one field to change.")
     youtube = client.oauth()
     current = one(youtube.videos().list(part="snippet,status", id=video_id).execute(), f"Video {video_id} not found.")
     # videos.update replaces whole parts: writable fields left out are reset, read-only ones rejected.
@@ -256,8 +259,6 @@ def update_video(
     # Sent only when asked: YouTube reports an unanswered question as false, and writing that back answers it.
     if paid_promotion is not None:
         body["paidProductPlacementDetails"] = {"hasPaidProductPlacement": paid_promotion}
-    if len(body) == 1:
-        raise InvalidRequest("Pass at least one field to change.")
     parts = ",".join(part for part in body if part != "id")
     # The reply has only the parts sent; fill the rest from the read so status doesn't come back empty.
     return _video({**current, **youtube.videos().update(part=parts, body=body).execute()}, mine=True)

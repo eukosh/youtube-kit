@@ -121,8 +121,10 @@ def test_update_video_leaves_parts_it_does_not_change_alone(api):
     assert sent["part"] == "paidProductPlacementDetails"
     assert set(sent["body"]) == {"id", "paidProductPlacementDetails"}
     assert result.title == "Title"  # filled in from the read
+    api.oauth.videos().list.reset_mock()
     with pytest.raises(InvalidRequest, match="at least one"):
         videos.update_video("dQw4w9WgXcQ")
+    api.oauth.videos().list.assert_not_called()  # refused before spending quota
 
 
 def test_update_video_keeps_the_video_language(api):

@@ -125,6 +125,13 @@ def test_my_channel_takes_a_title_that_is_not_a_valid_handle(settings, two_login
         assert auth.token_file(settings).stem == OTHER_ID
 
 
+def test_my_channel_blank_does_not_match_a_login_without_a_title(settings):
+    path = write_login(settings.token_dir)
+    path.write_text(path.read_text().replace('"title": "Title of @channel", ', ""))
+    with auth.working_on(" "), pytest.raises(InvalidRequest):
+        auth.token_file(settings)
+
+
 def test_my_channel_rejects_what_is_not_a_channel(settings, two_logins):
     with auth.working_on("a/b"), pytest.raises(InvalidRequest):
         auth.token_file(settings)

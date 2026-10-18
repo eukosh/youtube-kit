@@ -262,7 +262,7 @@ def _match(ref: str, logins: dict[str, dict]) -> str:
             return channel_id
     title = ref.strip().casefold()
     titled = [cid for cid, info in logins.items() if (info.get("channel") or {}).get("title", "").casefold() == title]
-    if len(titled) == 1:
+    if title and len(titled) == 1:
         return titled[0]
     if unparsed:
         raise unparsed
