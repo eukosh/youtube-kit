@@ -24,7 +24,7 @@ ytk playlist create TITLE          ytk playlist update PLAYLIST     ytk playlist
 ytk playlist add PLAYLIST VIDEO    ytk playlist remove PLAYLIST VIDEO
 ytk playlist move PLAYLIST VIDEO --position N                       ytk playlist delete PLAYLIST
 
-ytk comment list [VIDEO] [--status held|spam|rejected] [--search Q]
+ytk comment list [VIDEO] [--status held|spam] [--search Q]
 ytk comment replies COMMENT        ytk comment post VIDEO TEXT      ytk comment reply COMMENT TEXT
 ytk comment edit COMMENT TEXT      ytk comment delete COMMENT
 ytk comment approve|hold COMMENT...                                 ytk comment reject COMMENT... [--ban-author]

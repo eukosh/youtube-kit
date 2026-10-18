@@ -71,7 +71,7 @@ The server uses your `ytk auth login` logins. If you also installed `ytk` with `
 |---|---|
 | Analytics | totals, or breakdowns by day, month, video, country, device, OS, traffic source, playback location, age, gender or subscribed status |
 | Videos | get, categories, upload (resumable, with progress), update metadata, set thumbnail, wait for processing, like or dislike, check your rating, delete |
-| Comments | list (published, held for review, likely spam, rejected), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
+| Comments | list (published, held for review, likely spam), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
 | Playlists | list, get, items, create, update, set image, add, remove, move, delete |
 | Channel | get, recent activity, your logged-in channels, about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
 | Search | videos, channels and playlists, filtered by channel or date |

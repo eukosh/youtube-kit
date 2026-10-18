@@ -84,6 +84,12 @@ async def test_breakdowns_accept_snake_case(mcp, api):
     assert result.structured_content["columns"] == ["traffic-source", "views"]
 
 
+async def test_comments_cannot_be_listed_as_rejected(mcp, api):
+    # YouTube ignores that filter: channel-wide it returns published comments, per video none.
+    with pytest.raises(ToolError, match="status"):
+        await mcp.call_tool("list_comments", {"status": "rejected"})
+
+
 async def test_tools_work_on_the_channel_named(mcp, api, monkeypatch):
     token_dir = Settings.from_env().token_dir
     write_login(token_dir)
