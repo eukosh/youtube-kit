@@ -7,6 +7,8 @@ Contract (relied on by agents and scripts, documented in skills/youtube/SKILL.md
   exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected,
   10 timeout, 1 anything else (type "error"). Usage errors from argument parsing exit 2 with type
   "usage". When stderr is a terminal, errors print as readable text instead of JSON.
+- Long commands print {"progress": {"done", "total", "percent"}} lines to stderr as they go,
+  so on failure the error is the last stderr line. At a terminal it's a percentage instead.
 - When stdout is a terminal, the JSON is indented and colored.
 - Guarded deletes ask a human at a terminal instead of exiting 8; declining exits 1.
   For agents, the exit-8 details include `rerun`, the exact command that confirms.
@@ -187,7 +189,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     human = sys.stderr.isatty()
     try:
-        with _terminal_progress():
+        with _progress():
             result = app(argv, exit_on_error=False, print_error=human, result_action="return_value")
     except CycloptsError as e:
         if not human:  # a person got cyclopts' formatted message already
@@ -250,21 +252,25 @@ def _approved(plan: dict) -> bool:
 
 
 @contextlib.contextmanager
-def _terminal_progress() -> Iterator[None]:
-    """Show a self-overwriting percentage on stderr when a human is watching.
+def _progress() -> Iterator[None]:
+    """Report progress on stderr: a self-overwriting percentage for a person, JSON lines otherwise.
 
-    The line is ended on exit, before any error is printed after it.
+    The terminal line is ended on exit, before any error is printed after it.
     """
-    if not sys.stderr.isatty():
-        yield
-        return
+    human = sys.stderr.isatty()
     shown = False
+    step = -1
 
     def show(done: int, total: int) -> None:
-        nonlocal shown
-        shown = True
+        nonlocal shown, step
         percent = 100 * done // total if total else 100
-        print(f"\rprogress: {percent:3d}%", end="", file=sys.stderr, flush=True)
+        if human:
+            shown = True
+            print(f"\rprogress: {percent:3d}%", end="", file=sys.stderr, flush=True)
+        elif percent // 10 > step:  # every 10 points, so a log stays short
+            step = percent // 10
+            line = {"progress": {"done": done, "total": total, "percent": percent}}
+            print(json.dumps(line), file=sys.stderr, flush=True)
 
     try:
         with progress.reporting_to(show):

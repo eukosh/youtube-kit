@@ -179,6 +179,25 @@ def test_progress_line_is_ended_before_an_error(capsys, api, tmp_path, monkeypat
     assert re.sub(r"\x1b\[[0-9;]*m", "", error_line).startswith("✗ API says no.")
 
 
+def test_progress_is_json_lines_for_agents_with_the_error_last(capsys, api, tmp_path):
+    file = tmp_path / "clip.mp4"
+    file.write_bytes(b"x" * 1000)
+    api.oauth.videos().insert().next_chunk.side_effect = [
+        (MagicMock(resumable_progress=50), None),
+        (MagicMock(resumable_progress=80), None),  # same 10-point step: not repeated
+        (MagicMock(resumable_progress=400), None),
+        http_error(403, "quotaExceeded"),
+    ]
+
+    code, _, err = run(capsys, "video", "upload", str(file), "--title", "Hi")
+
+    assert code == 5
+    *lines, error = [json.loads(line) for line in err.strip().split("\n")]
+    assert [line["progress"]["percent"] for line in lines] == [5, 40]
+    assert lines[0] == {"progress": {"done": 50, "total": 1000, "percent": 5}}
+    assert error["error"]["type"] == "quota_exceeded"
+
+
 def test_ctrl_c_exits_130(capsys, api):
     api.public.videoCategories().list().execute.side_effect = KeyboardInterrupt
     with pytest.raises(SystemExit) as exited:
