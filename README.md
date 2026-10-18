@@ -119,7 +119,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 | `YOUTUBE_API_KEY` | API key for public data |
 | `YOUTUBE_CLIENT_SECRETS` | Path to the OAuth client JSON |
 | `YOUTUBE_TOKEN_DIR` | Directory of stored logins, one file per channel |
-| `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID or @handle), overriding `ytk auth switch` |
+| `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID, @handle or exact title), overriding `ytk auth switch` |
 | `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits) |
 
 </details>

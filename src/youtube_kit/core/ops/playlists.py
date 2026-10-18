@@ -5,13 +5,22 @@ from typing import Any
 from googleapiclient.errors import HttpError
 
 from .. import client, guard, parse
-from ..errors import OTHER_CHANNEL_HINT, Forbidden, InvalidRequest, NotFound, http_reason
+from ..errors import (
+    OTHER_CHANNEL_HINT,
+    Forbidden,
+    InvalidRequest,
+    NotFound,
+    YouTubeError,
+    from_http_error,
+    http_reason,
+)
 from ..models import Deleted, Page, Playlist, PlaylistEntry, PlaylistImage, PlaylistItem, PlaylistRemoval, Privacy
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
 from ._common import (
     changes,
     delete_if_present,
+    existing_file,
     image_size,
     image_upload,
     one,
@@ -234,23 +243,35 @@ def set_playlist_thumbnail(playlist: str, image: Path) -> PlaylistImage:
         image: Path to a square JPEG or PNG, at most 2 MB.
     """
     playlist_id = parse.playlist_id(playlist)
-    media = image_upload(image, max_mb=2)
-    size = image_size(Path(image).expanduser())
+    path = existing_file(image)
+    media = image_upload(path, max_mb=2)
+    size = image_size(path)
     if size and size[0] != size[1]:
-        raise InvalidRequest(f"Playlist images must be square; {Path(image).name} is {size[0]}x{size[1]}.")
+        raise InvalidRequest(f"Playlist images must be square; {path.name} is {size[0]}x{size[1]}.")
     images = client.oauth().playlistImages()
     current = images.list(part="snippet", parent=playlist_id).execute().get("items", [])
     # playlistImages.update rejects every request, and insert refuses while a hero image exists.
+    removed = False
     for item in current:
         if item["snippet"].get("type") == "hero":
-            delete_if_present(images.delete(id=item["id"]))
+            removed = delete_if_present(images.delete(id=item["id"])) or removed
     body = {"snippet": {"playlistId": playlist_id, "type": "hero"}}
     try:
         response = images.insert(part="snippet", body=body, media_body=media).execute()
     except HttpError as e:
-        if http_reason(e) == "INVALID_ASPECT_RATIO":
-            raise InvalidRequest("YouTube rejected the image's aspect ratio. Playlist images must be square.") from e
-        raise
+        reason = http_reason(e)
+        if reason == "INVALID_ASPECT_RATIO":
+            error = InvalidRequest("YouTube rejected the image's aspect ratio. Playlist images must be square.")
+        elif reason == "IMAGE_TYPE_ALREADY_EXISTS":
+            # Happens right after setting one: YouTube doesn't list the new image for a while, so it wasn't deleted.
+            error = YouTubeError("YouTube doesn't list the playlist's current thumbnail yet. Try again in a minute.")
+        else:
+            error = from_http_error(e)
+        if removed:
+            error = type(error)(
+                f"{error} The playlist's previous thumbnail was already removed.", details=error.details
+            )
+        raise error from e
     return PlaylistImage(
         playlist_id=playlist_id,
         image_id=response["id"],

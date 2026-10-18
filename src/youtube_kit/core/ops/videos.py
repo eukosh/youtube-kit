@@ -215,49 +215,52 @@ def update_video(
         paid_promotion: Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.
         ai_content: Whether AI made realistic content: a real person saying or doing something they didn't,
             altered footage of a real event or place, a realistic scene that didn't happen, or music that's
-            the video's focus. Not for scripts, captions, or obviously unreal content.
+            the video's focus. Not for scripts, captions, or obviously unreal content. YouTube never reports
+            the current answer, so pass it again when changing privacy, publish_at or made_for_kids; leaving it
+            out then may clear it.
     """
     video_id = parse.video_id(video)
     youtube = client.oauth()
     current = one(youtube.videos().list(part="snippet,status", id=video_id).execute(), f"Video {video_id} not found.")
     # videos.update replaces whole parts: writable fields left out are reset, read-only ones rejected.
-    snippet = pick(current["snippet"], _WRITABLE_SNIPPET)
-    status = pick(current["status"], _WRITABLE_STATUS)
-    snippet.update(
-        changes(
-            title=title,
-            description=description,
-            tags=None if tags is None else _clean(tags),
-            categoryId=category_id,
-            defaultLanguage=language,
-            defaultAudioLanguage=audio_language,
-        )
+    # So each part is sent only when one of its fields changes: a read right after an update can be stale,
+    # and writing a stale part back would undo that update.
+    edits = changes(
+        title=title,
+        description=description,
+        tags=None if tags is None else _clean(tags),
+        categoryId=category_id,
+        defaultLanguage=language,
+        defaultAudioLanguage=audio_language,
     )
-    if privacy is not None:
-        status["privacyStatus"] = privacy
-    if made_for_kids is not None:
-        status["selfDeclaredMadeForKids"] = made_for_kids
-    if ai_content is not None:
-        status["containsSyntheticMedia"] = ai_content
-    if publish_at is not None:
-        if status["privacyStatus"] != "private":
-            raise InvalidRequest("publish_at requires the video to be private.")
-        status["publishAt"] = parse.timestamp(publish_at)
-    if status["privacyStatus"] != "private":
-        # Also covers videos whose schedule already fired: YouTube keeps the stale publishAt.
-        status.pop("publishAt", None)
-
-    body: dict[str, Any] = {"id": video_id, "snippet": snippet}
-    parts = "snippet"
+    body: dict[str, Any] = {"id": video_id}
+    if edits:
+        body["snippet"] = pick(current["snippet"], _WRITABLE_SNIPPET) | edits
     # Reads never include containsSyntheticMedia, so a status write that doesn't set it may clear it.
     if (privacy, publish_at, made_for_kids, ai_content) != (None, None, None, None):
+        status = pick(current["status"], _WRITABLE_STATUS)
+        if privacy is not None:
+            status["privacyStatus"] = privacy
+        if made_for_kids is not None:
+            status["selfDeclaredMadeForKids"] = made_for_kids
+        if ai_content is not None:
+            status["containsSyntheticMedia"] = ai_content
+        if publish_at is not None:
+            if status["privacyStatus"] != "private":
+                raise InvalidRequest("publish_at requires the video to be private.")
+            status["publishAt"] = parse.timestamp(publish_at)
+        if status["privacyStatus"] != "private":
+            # Also covers videos whose schedule already fired: YouTube keeps the stale publishAt.
+            status.pop("publishAt", None)
         body["status"] = status
-        parts += ",status"
     # Sent only when asked: YouTube reports an unanswered question as false, and writing that back answers it.
     if paid_promotion is not None:
         body["paidProductPlacementDetails"] = {"hasPaidProductPlacement": paid_promotion}
-        parts += ",paidProductPlacementDetails"
-    return _video(youtube.videos().update(part=parts, body=body).execute(), mine=True)
+    if len(body) == 1:
+        raise InvalidRequest("Pass at least one field to change.")
+    parts = ",".join(part for part in body if part != "id")
+    # The reply has only the parts sent; fill the rest from the read so status doesn't come back empty.
+    return _video({**current, **youtube.videos().update(part=parts, body=body).execute()}, mine=True)
 
 
 _WRITABLE_SNIPPET = ("title", "description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")

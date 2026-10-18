@@ -103,7 +103,7 @@ def from_http_error(error: HttpError) -> YouTubeError:
     status = error.resp.status
     reason = http_reason(error)
     # Some messages carry HTML, like "the request's <code>playlistId</code> parameter".
-    message = re.sub(r"</?[a-z]+>", "", error.reason or "") or f"HTTP {status}"
+    message = re.sub(r"<[^>]+>", "", error.reason or "") or f"HTTP {status}"
 
     if reason in _QUOTA_REASONS:
         return QuotaExceeded(f"{message} Daily quota resets at midnight Pacific Time.")

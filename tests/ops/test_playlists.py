@@ -2,7 +2,7 @@ import struct
 
 import pytest
 
-from youtube_kit.core.errors import InvalidRequest, NotFound
+from youtube_kit.core.errors import InvalidRequest, NotFound, YouTubeError
 from youtube_kit.core.ops import playlists
 
 from ..fakes import CHANNEL_ID, http_error, playlist_item_resource, playlist_resource, video_item
@@ -178,12 +178,23 @@ def test_set_playlist_thumbnail_refuses_non_square_before_touching_the_current_i
     api.oauth.playlistImages().delete.assert_not_called()
 
 
-def test_set_playlist_thumbnail_explains_youtubes_aspect_ratio_error(api, tmp_path):
+@pytest.mark.parametrize(("current", "removed"), [([], False), ([{"id": "img", "snippet": {"type": "hero"}}], True)])
+def test_set_playlist_thumbnail_explains_a_failed_insert(api, tmp_path, current, removed):
     image = tmp_path / "cover.jpg"
     image.write_bytes(b"not a real jpeg")
     images = api.oauth.playlistImages()
-    images.list().execute.return_value = {"items": []}
+    images.list().execute.return_value = {"items": current}
     images.insert().execute.side_effect = http_error(500, "INVALID_ASPECT_RATIO", "Internal error encountered.")
 
-    with pytest.raises(InvalidRequest, match="must be square"):
+    with pytest.raises(InvalidRequest, match="must be square") as caught:
         playlists.set_playlist_thumbnail("PL1", image)
+    assert ("previous thumbnail was already removed" in str(caught.value)) is removed
+
+
+def test_set_playlist_thumbnail_right_after_setting_one_says_to_wait(api, tmp_path):
+    images = api.oauth.playlistImages()
+    images.list().execute.return_value = {"items": []}
+    images.insert().execute.side_effect = http_error(500, "IMAGE_TYPE_ALREADY_EXISTS", "Internal error encountered.")
+
+    with pytest.raises(YouTubeError, match="Try again in a minute"):
+        playlists.set_playlist_thumbnail("PL1", _png(tmp_path / "cover.png", 512, 512))

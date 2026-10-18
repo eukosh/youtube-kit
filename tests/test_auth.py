@@ -111,6 +111,20 @@ def test_my_channel_a_title_two_channels_share_matches_neither(settings):
         auth.token_file(settings)
 
 
+def test_my_channel_prefers_a_handle_over_a_title_that_spells_it(settings, two_logins):
+    path = settings.token_dir / f"{CHANNEL_ID}.json"
+    path.write_text(path.read_text().replace("Title of @channel", "@other"))
+    with auth.working_on("@other"):
+        assert auth.token_file(settings).stem == OTHER_ID
+
+
+def test_my_channel_takes_a_title_that_is_not_a_valid_handle(settings, two_logins):
+    path = settings.token_dir / f"{OTHER_ID}.json"
+    path.write_text(path.read_text().replace("Title of @Other", "Books / Audio"))
+    with auth.working_on("books / audio"):
+        assert auth.token_file(settings).stem == OTHER_ID
+
+
 def test_my_channel_rejects_what_is_not_a_channel(settings, two_logins):
     with auth.working_on("a/b"), pytest.raises(InvalidRequest):
         auth.token_file(settings)
