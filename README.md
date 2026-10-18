@@ -50,7 +50,7 @@ The plugins follow `ytk` releases. Codex updates them at startup; Claude Code do
 `ytk mcp` serves the same operations as tools. In Claude Code:
 
 ```sh
-claude mcp add youtube -- uvx --from youtube-kit ytk mcp
+claude mcp add youtube -- uvx youtube-kit mcp
 ```
 
 In clients configured with JSON (Claude Desktop, Cursor and others):
@@ -58,12 +58,12 @@ In clients configured with JSON (Claude Desktop, Cursor and others):
 ```json
 {
   "mcpServers": {
-    "youtube": { "command": "uvx", "args": ["--from", "youtube-kit", "ytk", "mcp"] }
+    "youtube": { "command": "uvx", "args": ["youtube-kit", "mcp"] }
   }
 }
 ```
 
-In the ChatGPT desktop app: Settings → MCP servers → Add server → STDIO, with the command `uvx --from youtube-kit ytk mcp`. Codex shares that setting (`codex mcp add youtube -- uvx --from youtube-kit ytk mcp`).
+In the ChatGPT desktop app: Settings → MCP servers → Add server → STDIO, with the command `uvx youtube-kit mcp`. Codex shares that setting (`codex mcp add youtube -- uvx youtube-kit mcp`).
 
 The server uses your `ytk auth login` logins. If you also installed `ytk` with `uv tool install`, `uvx` runs that installed version: `uv tool upgrade youtube-kit` updates both. Not set up yet? The model can walk you through it with the `setup_guide` tool.
 
