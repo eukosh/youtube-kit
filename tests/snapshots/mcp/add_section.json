@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Add a section to your channel's home page. A channel has at most 10.\n\nQuota: 50 units.",
+  "description": "Add a section to your channel's home page. A channel has at most 10.\n\nQuota: 52 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {

@@ -59,7 +59,7 @@
           }
         ],
         "default": null,
-        "description": "Language of the channel's title and description, e.g. en or de."
+        "description": "Language of the channel's title and description, e.g. en or de. If the channel has none,\nYouTube may pick one on any change; pass it to choose."
       },
       "my_channel": {
         "anyOf": [

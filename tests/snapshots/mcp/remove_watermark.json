@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Remove the watermark from your videos.\n\nQuota: 51 units.",
+  "description": "Remove the watermark from your videos. Succeeds when there is none.\n\nQuota: 51 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
