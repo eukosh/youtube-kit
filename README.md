@@ -1,5 +1,7 @@
 # youtube-kit
 
+<!-- mcp-name: io.github.eukosh/youtube-kit -->
+
 [![CI](https://github.com/eukosh/youtube-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/eukosh/youtube-kit/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![Python](https://img.shields.io/pypi/pyversions/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
