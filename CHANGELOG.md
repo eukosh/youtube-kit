@@ -5,6 +5,19 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.6.0](https://github.com/eukosh/youtube-kit/compare/v0.5.0...v0.6.0) (2026-10-18)
+
+
+### Added
+
+* list the MCP server in the official MCP Registry, runnable as `uvx youtube-kit mcp` ([#11](https://github.com/eukosh/youtube-kit/issues/11)) ([43c4bb1](https://github.com/eukosh/youtube-kit/commit/43c4bb10b333f6e09d13cb28573841382b619b77))
+* video get shows rejected uploads, and uploads report progress to agents ([#9](https://github.com/eukosh/youtube-kit/issues/9)) ([f80072a](https://github.com/eukosh/youtube-kit/commit/f80072afdbe64f7b80663d99dcb935a5319eef7f))
+
+
+### Fixed
+
+* playlist thumbnails, watermarks, home sections, channel titles, and partial video updates ([#8](https://github.com/eukosh/youtube-kit/issues/8)) ([ca65bcf](https://github.com/eukosh/youtube-kit/commit/ca65bcfdca8eca0270fdeafb394d4ea7b4fd3318))
+
 ## [0.5.0](https://github.com/eukosh/youtube-kit/compare/v0.4.0...v0.5.0) (2026-10-17)
 
 
