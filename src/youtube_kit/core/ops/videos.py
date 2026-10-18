@@ -215,9 +215,8 @@ def update_video(
         paid_promotion: Whether the video includes paid promotion: a sponsorship, product placement, or endorsement.
         ai_content: Whether AI made realistic content: a real person saying or doing something they didn't,
             altered footage of a real event or place, a realistic scene that didn't happen, or music that's
-            the video's focus. Not for scripts, captions, or obviously unreal content. YouTube never reports
-            the current answer, so pass it again when changing privacy, publish_at or made_for_kids; leaving it
-            out then may clear it.
+            the video's focus. Not for scripts, captions, or obviously unreal content. Left out, the current
+            answer stays.
     """
     video_id = parse.video_id(video)
     fields = (title, description, tags, category_id, language, audio_language, privacy, publish_at)
@@ -239,7 +238,6 @@ def update_video(
     body: dict[str, Any] = {"id": video_id}
     if edits:
         body["snippet"] = pick(current["snippet"], _WRITABLE_SNIPPET) | edits
-    # Reads never include containsSyntheticMedia, so a status write that doesn't set it may clear it.
     if (privacy, publish_at, made_for_kids, ai_content) != (None, None, None, None):
         status = pick(current["status"], _WRITABLE_STATUS)
         if privacy is not None:

@@ -20,7 +20,7 @@
           }
         ],
         "default": null,
-        "description": "Whether AI made realistic content: a real person saying or doing something they didn't,\naltered footage of a real event or place, a realistic scene that didn't happen, or music that's\nthe video's focus. Not for scripts, captions, or obviously unreal content. YouTube never reports\nthe current answer, so pass it again when changing privacy, publish_at or made_for_kids; leaving it\nout then may clear it."
+        "description": "Whether AI made realistic content: a real person saying or doing something they didn't,\naltered footage of a real event or place, a realistic scene that didn't happen, or music that's\nthe video's focus. Not for scripts, captions, or obviously unreal content. Left out, the current\nanswer stays."
       },
       "audio_language": {
         "anyOf": [
