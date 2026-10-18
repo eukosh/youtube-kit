@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.eukosh/youtube-kit",
   "title": "youtube-kit",
-  "description": "Manage your own YouTube channels from a CLI or MCP server: analytics, uploads, playlists, comments.",
+  "description": "YouTube CLI and MCP server: search and read public YouTube, and manage your own channels.",
   "version": "0.6.0",
   "websiteUrl": "https://github.com/eukosh/youtube-kit#readme",
   "repository": {
