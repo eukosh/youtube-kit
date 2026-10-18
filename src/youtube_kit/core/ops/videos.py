@@ -247,8 +247,12 @@ def update_video(
         # Also covers videos whose schedule already fired: YouTube keeps the stale publishAt.
         status.pop("publishAt", None)
 
-    body = {"id": video_id, "snippet": snippet, "status": status}
-    parts = "snippet,status"
+    body: dict[str, Any] = {"id": video_id, "snippet": snippet}
+    parts = "snippet"
+    # Reads never include containsSyntheticMedia, so a status write that doesn't set it may clear it.
+    if (privacy, publish_at, made_for_kids, ai_content) != (None, None, None, None):
+        body["status"] = status
+        parts += ",status"
     # Sent only when asked: YouTube reports an unanswered question as false, and writing that back answers it.
     if paid_promotion is not None:
         body["paidProductPlacementDetails"] = {"hasPaidProductPlacement": paid_promotion}

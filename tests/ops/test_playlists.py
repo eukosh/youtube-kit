@@ -1,9 +1,11 @@
+import struct
+
 import pytest
 
 from youtube_kit.core.errors import InvalidRequest, NotFound
 from youtube_kit.core.ops import playlists
 
-from ..fakes import CHANNEL_ID, playlist_item_resource, playlist_resource, video_item
+from ..fakes import CHANNEL_ID, http_error, playlist_item_resource, playlist_resource, video_item
 
 
 def test_list_playlist_items(api):
@@ -151,19 +153,37 @@ def test_move_in_playlist_needs_exactly_one_occurrence(api, items, error):
         playlists.move_in_playlist("PL1", "dQw4w9WgXcQ", position=0)
 
 
-@pytest.mark.parametrize(
-    ("current", "method"), [([], "insert"), ([{"id": "img", "snippet": {"type": "hero"}}], "update")]
-)
-def test_set_playlist_thumbnail_inserts_or_replaces(api, tmp_path, current, method):
-    image = tmp_path / "cover.png"
-    image.write_bytes(b"png")
+def _png(path, width: int, height: int):
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + struct.pack(">II", width, height))
+    return path
+
+
+@pytest.mark.parametrize("current", [[], [{"id": "img", "snippet": {"type": "hero"}}]])
+def test_set_playlist_thumbnail_replaces_by_deleting_first(api, tmp_path, current):
     images = api.oauth.playlistImages()
     images.list().execute.return_value = {"items": current}
-    getattr(images, method)().execute.return_value = {"id": "img", "snippet": {"width": 2048, "height": 1152}}
+    images.insert().execute.return_value = {"id": "img", "snippet": {"width": 1024, "height": 1024}}
 
-    result = playlists.set_playlist_thumbnail("PL1", image)
+    result = playlists.set_playlist_thumbnail("PL1", _png(tmp_path / "cover.png", 1024, 1024))
 
-    assert (result.image_id, result.width) == ("img", 2048)
-    body = getattr(images, method).call_args.kwargs["body"]
-    assert body["snippet"] == {"playlistId": "PL1", "type": "hero"}
-    assert body.get("id") == (None if method == "insert" else "img")
+    assert (result.image_id, result.width) == ("img", 1024)
+    assert images.insert.call_args.kwargs["body"] == {"snippet": {"playlistId": "PL1", "type": "hero"}}
+    assert [c.kwargs for c in images.delete.call_args_list if c.kwargs] == [{"id": "img"} for _ in current]
+    images.update.assert_not_called()
+
+
+def test_set_playlist_thumbnail_refuses_non_square_before_touching_the_current_image(api, tmp_path):
+    with pytest.raises(InvalidRequest, match="is 1280x720"):
+        playlists.set_playlist_thumbnail("PL1", _png(tmp_path / "cover.png", 1280, 720))
+    api.oauth.playlistImages().delete.assert_not_called()
+
+
+def test_set_playlist_thumbnail_explains_youtubes_aspect_ratio_error(api, tmp_path):
+    image = tmp_path / "cover.jpg"
+    image.write_bytes(b"not a real jpeg")
+    images = api.oauth.playlistImages()
+    images.list().execute.return_value = {"items": []}
+    images.insert().execute.side_effect = http_error(500, "INVALID_ASPECT_RATIO", "Internal error encountered.")
+
+    with pytest.raises(InvalidRequest, match="must be square"):
+        playlists.set_playlist_thumbnail("PL1", image)

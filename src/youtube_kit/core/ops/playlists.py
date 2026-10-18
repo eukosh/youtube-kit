@@ -2,12 +2,25 @@ import itertools
 from pathlib import Path
 from typing import Any
 
+from googleapiclient.errors import HttpError
+
 from .. import client, guard, parse
-from ..errors import OTHER_CHANNEL_HINT, Forbidden, InvalidRequest, NotFound
+from ..errors import OTHER_CHANNEL_HINT, Forbidden, InvalidRequest, NotFound, http_reason
 from ..models import Deleted, Page, Playlist, PlaylistEntry, PlaylistImage, PlaylistItem, PlaylistRemoval, Privacy
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
-from ._common import changes, delete_if_present, image_upload, one, pick, playlist_url, to_int, unique_ids, video_url
+from ._common import (
+    changes,
+    delete_if_present,
+    image_size,
+    image_upload,
+    one,
+    pick,
+    playlist_url,
+    to_int,
+    unique_ids,
+    video_url,
+)
 from .channels import copied_from_recent_uploads, my_channel_id, owner_or
 
 _PARTS = "snippet,status,contentDetails"
@@ -212,24 +225,32 @@ def move_in_playlist(playlist: str, video: str, *, position: int) -> PlaylistIte
     return _playlist_item(client.oauth().playlistItems().update(part="snippet", body=body).execute())
 
 
-@operation(quota=51, destructive=True, idempotent=True, oauth=True)
+@operation(quota=101, destructive=True, idempotent=True, oauth=True)
 def set_playlist_thumbnail(playlist: str, image: Path) -> PlaylistImage:
     """Set the custom thumbnail of one of your playlists, replacing any current one.
 
     Args:
         playlist: Playlist ID or URL.
-        image: Path to a 16:9 JPEG or PNG, at most 2 MB.
+        image: Path to a square JPEG or PNG, at most 2 MB.
     """
     playlist_id = parse.playlist_id(playlist)
     media = image_upload(image, max_mb=2)
+    size = image_size(Path(image).expanduser())
+    if size and size[0] != size[1]:
+        raise InvalidRequest(f"Playlist images must be square; {Path(image).name} is {size[0]}x{size[1]}.")
     images = client.oauth().playlistImages()
     current = images.list(part="snippet", parent=playlist_id).execute().get("items", [])
-    hero = next((item for item in current if item["snippet"].get("type") == "hero"), None)
-    body: dict[str, Any] = {"snippet": {"playlistId": playlist_id, "type": "hero"}}
-    if hero is None:
+    # playlistImages.update rejects every request, and insert refuses while a hero image exists.
+    for item in current:
+        if item["snippet"].get("type") == "hero":
+            delete_if_present(images.delete(id=item["id"]))
+    body = {"snippet": {"playlistId": playlist_id, "type": "hero"}}
+    try:
         response = images.insert(part="snippet", body=body, media_body=media).execute()
-    else:
-        response = images.update(part="snippet", body={"id": hero["id"], **body}, media_body=media).execute()
+    except HttpError as e:
+        if http_reason(e) == "INVALID_ASPECT_RATIO":
+            raise InvalidRequest("YouTube rejected the image's aspect ratio. Playlist images must be square.") from e
+        raise
     return PlaylistImage(
         playlist_id=playlist_id,
         image_id=response["id"],

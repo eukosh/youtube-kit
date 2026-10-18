@@ -6,12 +6,12 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Set the custom thumbnail of one of your playlists, replacing any current one.\n\nQuota: 51 units.",
+  "description": "Set the custom thumbnail of one of your playlists, replacing any current one.\n\nQuota: 101 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
       "image": {
-        "description": "Path to a 16:9 JPEG or PNG, at most 2 MB.",
+        "description": "Path to a square JPEG or PNG, at most 2 MB.",
         "format": "path",
         "type": "string"
       },
@@ -25,7 +25,7 @@
           }
         ],
         "default": null,
-        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
       },
       "playlist": {
         "description": "Playlist ID or URL.",

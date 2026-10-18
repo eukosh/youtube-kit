@@ -91,7 +91,7 @@ def test_update_video_changes_only_given_fields(api):
     assert result.studio_url == "https://studio.youtube.com/video/dQw4w9WgXcQ/edit"
 
 
-def test_update_video_answers_disclosures_only_when_given(api):
+def test_update_video_writes_disclosures_and_status_only_when_given(api):
     api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
     api.oauth.videos().update().execute.return_value = video_item()
 
@@ -100,9 +100,8 @@ def test_update_video_answers_disclosures_only_when_given(api):
     videos.update_video("dQw4w9WgXcQ", paid_promotion=True, ai_content=False, audio_language="uk")
     answered = api.oauth.videos().update.call_args.kwargs
 
-    assert untouched["part"] == "snippet,status"
-    assert "paidProductPlacementDetails" not in untouched["body"]
-    assert "containsSyntheticMedia" not in untouched["body"]["status"]
+    assert untouched["part"] == "snippet"  # leaves status, and the AI answer YouTube never reports, alone
+    assert set(untouched["body"]) == {"id", "snippet"}
     assert answered["part"] == "snippet,status,paidProductPlacementDetails"
     assert answered["body"]["paidProductPlacementDetails"] == {"hasPaidProductPlacement": True}
     assert answered["body"]["status"]["containsSyntheticMedia"] is False

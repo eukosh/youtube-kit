@@ -84,8 +84,10 @@ def test_several_logins_without_a_default_name_the_choices(settings, two_logins)
     assert not any(channel.default for channel in auth.my_channels(settings))
 
 
-@pytest.mark.parametrize("ref", [OTHER_ID, "@other", "other", f"https://www.youtube.com/channel/{OTHER_ID}"])
-def test_my_channel_picks_a_login_by_id_or_handle(settings, two_logins, ref):
+@pytest.mark.parametrize(
+    "ref", [OTHER_ID, "@other", "other", f"https://www.youtube.com/channel/{OTHER_ID}", " title of @OTHER "]
+)
+def test_my_channel_picks_a_login_by_id_handle_or_title(settings, two_logins, ref):
     with auth.working_on(ref):
         assert auth.token_file(settings).stem == OTHER_ID
 
@@ -97,6 +99,15 @@ def test_my_channel_none_keeps_the_outer_choice(settings, two_logins):
 
 def test_my_channel_a_channel_without_a_login_lists_the_logins(settings, two_logins):
     with auth.working_on("@stranger"), pytest.raises(NotAuthorized, match=r"Not logged in to @stranger .*@Other"):
+        auth.token_file(settings)
+
+
+def test_my_channel_a_title_two_channels_share_matches_neither(settings):
+    write_login(settings.token_dir, handle="@one")
+    write_login(settings.token_dir, OTHER_ID, "@two")
+    for path in settings.token_dir.glob("UC*.json"):
+        path.write_text(path.read_text().replace("Title of @one", "Same").replace("Title of @two", "Same"))
+    with auth.working_on("Same"), pytest.raises(NotAuthorized, match="exact title"):
         auth.token_file(settings)
 
 

@@ -75,6 +75,15 @@ async def test_structured_results(mcp, api):
     assert result.structured_content == {"result": [{"id": "22", "title": "People & Blogs"}]}
 
 
+async def test_breakdowns_accept_snake_case(mcp, api):
+    api.analytics.reports().query().execute.return_value = {
+        "columnHeaders": [{"name": "insightTrafficSourceType"}, {"name": "views"}],
+        "rows": [["YT_SEARCH", 3]],
+    }
+    result = await mcp.call_tool("get_analytics", {"by": "traffic_source", "metrics": ["views"]})
+    assert result.structured_content["columns"] == ["traffic-source", "views"]
+
+
 async def test_tools_work_on_the_channel_named(mcp, api, monkeypatch):
     token_dir = Settings.from_env().token_dir
     write_login(token_dir)

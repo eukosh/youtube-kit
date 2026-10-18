@@ -70,7 +70,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 
 ## Several channels
 
-The user can be logged in to several channels, one `ytk auth login` each. `ytk channel mine` lists them (no API call) and marks the `default` one. Every command that reaches YouTube works on the default channel unless `--my-channel CHANNEL` (UC… ID or @handle of a logged-in channel) names another; `YOUTUBE_CHANNEL` sets it for a whole shell. `ytk auth switch CHANNEL` changes the stored default for every later command and for the MCP server, so don't run it on the user's behalf; pass `--my-channel` instead.
+The user can be logged in to several channels, one `ytk auth login` each. `ytk channel mine` lists them (no API call) and marks the `default` one. Every command that reaches YouTube works on the default channel unless `--my-channel CHANNEL` (UC… ID, @handle or exact title of a logged-in channel) names another; `YOUTUBE_CHANNEL` sets it for a whole shell. `ytk auth switch CHANNEL` changes the stored default for every later command and for the MCP server, so don't run it on the user's behalf; pass `--my-channel` instead.
 
 When the user has several channels and the task touches "my channel" without saying which, ask before writing anything. Read-only commands on someone else's content (`video get`, `search`, `channel get @someone`) don't care which of the user's channels you use. All logged-in channels share the project's daily quota. Handles are the ones stored at login; if one doesn't match after a rename, use the channel's `id` from `ytk channel mine`.
 

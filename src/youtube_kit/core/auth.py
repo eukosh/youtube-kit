@@ -248,14 +248,24 @@ def _logins(settings: Settings) -> dict[str, dict]:
 
 
 def _match(ref: str, logins: dict[str, dict]) -> str:
-    """ID of the logged-in channel that `ref` names."""
+    """ID of the logged-in channel that `ref` names: its ID, @handle, or exact title (ignoring case)."""
+    titled = [
+        cid
+        for cid, info in logins.items()
+        if (info.get("channel") or {}).get("title", "").casefold() == ref.strip().casefold()
+    ]
+    if len(titled) == 1:
+        return titled[0]
     key = parse.channel_ref(ref)
     for channel_id, info in logins.items():
         handle = (info.get("channel") or {}).get("handle") or ""
         if (key.by == "id" and key.value == channel_id) or (key.by == "handle" and key.value.lower() == handle.lower()):
             return channel_id
     logged_in = _describe(logins) if logins else "none"
-    raise NotAuthorized(f"Not logged in to {ref} (logged in: {logged_in}). {LOGIN_HINT} Pick that channel at Google.")
+    raise NotAuthorized(
+        f"Not logged in to {ref} (logged in: {logged_in}). Name a channel by its @handle, UC… ID or exact title. "
+        f"To add another one: {LOGIN_HINT} Pick that channel at Google."
+    )
 
 
 def _default_id(settings: Settings, logins: dict[str, dict]) -> str | None:

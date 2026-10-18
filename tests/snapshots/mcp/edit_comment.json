@@ -24,7 +24,7 @@
           }
         ],
         "default": null,
-        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
       },
       "text": {
         "description": "The new text.",
