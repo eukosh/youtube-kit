@@ -54,6 +54,19 @@ def test_get_videos_handles_hidden_counts(api):
     assert (stats.views, stats.likes, stats.comments) == (7, None, None)
 
 
+def test_get_videos_shows_why_an_upload_was_rejected(api):
+    status = {"privacyStatus": "private", "uploadStatus": "rejected", "rejectionReason": "duplicate"}
+    api.public.videos().list().execute.return_value = {"items": [video_item(status=status)]}
+
+    [video] = videos.get_videos(["dQw4w9WgXcQ"])
+
+    assert (video.upload_status, video.rejection_reason, video.upload_failure_reason) == (
+        "rejected",
+        "duplicate",
+        None,
+    )
+
+
 def test_get_videos_requires_input(api):
     with pytest.raises(InvalidRequest):
         videos.get_videos([])

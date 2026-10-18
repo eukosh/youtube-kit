@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Upload a video file from disk (resumable, reports progress).\n\nCategory and languages left out are copied from your most recent public upload (among your last 150),\nso the video matches the rest of your channel; with none, the category is 22 (People & Blogs).\n\nQuota: 1607 units.",
+  "description": "Upload a video file from disk (resumable, reports progress).\n\nCategory and languages left out are copied from your most recent public upload (among your last 150),\nso the video matches the rest of your channel; with none, the category is 22 (People & Blogs).\nYouTube keeps processing the video after this returns, and its duration and statistics appear only once\nthat ends. Checking whether processing has finished tells you when, or why it failed.\n\nQuota: 1607 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
@@ -118,7 +118,7 @@
           }
         ],
         "default": null,
-        "description": "Keyword tags."
+        "description": "Keyword tags. YouTube may store them in a different order."
       },
       "title": {
         "description": "Video title.",
@@ -290,6 +290,18 @@
         ],
         "default": null
       },
+      "rejection_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Why YouTube rejected the video, e.g. copyright, duplicate, length, termsOfService. YouTube reports no reason for a video kept private because its API project isn't verified."
+      },
       "stats": {
         "anyOf": [
           {
@@ -360,7 +372,8 @@
             "type": "null"
           }
         ],
-        "default": null
+        "default": null,
+        "description": "In the order YouTube stores them, which may differ from yours."
       },
       "title": {
         "anyOf": [
@@ -372,6 +385,30 @@
           }
         ],
         "default": null
+      },
+      "upload_failure_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Why a failed upload failed, e.g. codec, conversion, emptyFile, invalidFile, tooSmall."
+      },
+      "upload_status": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "uploaded, processed, failed, rejected, or deleted."
       },
       "url": {
         "type": "string"

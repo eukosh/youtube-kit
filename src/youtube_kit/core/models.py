@@ -45,7 +45,7 @@ class Video(BaseModel):
     channel_id: str | None = None
     channel_title: str | None = None
     published_at: datetime | None = None
-    tags: list[str] | None = None
+    tags: list[str] | None = Field(None, description="In the order YouTube stores them, which may differ from yours.")
     category_id: str | None = None
     language: str | None = Field(None, description="Language of the title and description, e.g. en-US.")
     audio_language: str | None = Field(None, description="Language spoken in the video, e.g. en-US.")
@@ -59,6 +59,15 @@ class Video(BaseModel):
         None,
         description="Declared to contain realistic AI-made content, as set by this upload or update. "
         "YouTube doesn't report it when reading a video.",
+    )
+    upload_status: str | None = Field(None, description="uploaded, processed, failed, rejected, or deleted.")
+    upload_failure_reason: str | None = Field(
+        None, description="Why a failed upload failed, e.g. codec, conversion, emptyFile, invalidFile, tooSmall."
+    )
+    rejection_reason: str | None = Field(
+        None,
+        description="Why YouTube rejected the video, e.g. copyright, duplicate, length, termsOfService. "
+        "YouTube reports no reason for a video kept private because its API project isn't verified.",
     )
 
 

@@ -197,6 +197,18 @@
               ],
               "default": null
             },
+            "rejection_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Why YouTube rejected the video, e.g. copyright, duplicate, length, termsOfService. YouTube reports no reason for a video kept private because its API project isn't verified."
+            },
             "stats": {
               "anyOf": [
                 {
@@ -267,7 +279,8 @@
                   "type": "null"
                 }
               ],
-              "default": null
+              "default": null,
+              "description": "In the order YouTube stores them, which may differ from yours."
             },
             "title": {
               "anyOf": [
@@ -279,6 +292,30 @@
                 }
               ],
               "default": null
+            },
+            "upload_failure_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Why a failed upload failed, e.g. codec, conversion, emptyFile, invalidFile, tooSmall."
+            },
+            "upload_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "uploaded, processed, failed, rejected, or deleted."
             },
             "url": {
               "type": "string"

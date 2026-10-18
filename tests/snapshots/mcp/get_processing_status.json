@@ -34,7 +34,7 @@
       },
       "wait": {
         "default": false,
-        "description": "Keep checking every 10 seconds (1 quota unit each, with progress reports) until processing ends.\nIf it hasn't ended within timeout, that's a timeout error, so a script can chain the next step on success.",
+        "description": "Keep checking every 10 seconds (1 quota unit each) until processing ends, reporting progress\nwhen YouTube gives it.\nIf it hasn't ended within timeout, that's a timeout error, so a script can chain the next step on success.",
         "type": "boolean"
       }
     },
