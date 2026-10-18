@@ -28,6 +28,17 @@ def test_http_errors_map_to_domain_errors(status, reason, expected):
     assert "Nope." in str(error)
 
 
+def test_messages_drop_html_and_keep_the_reason_for_unmapped_errors():
+    assert str(errors.from_http_error(http_error(404, "playlistNotFound", "The <code>playlistId</code> is gone."))) == (
+        "The playlistId is gone."
+    )
+    quota = 'You have exceeded your <a href="/youtube/v3/getting-started#quota">quota</a>.'
+    assert "<" not in str(errors.from_http_error(http_error(400, "badRequest", quota)))
+    assert "HTTP 500, INVALID_ASPECT_RATIO" in str(
+        errors.from_http_error(http_error(500, "INVALID_ASPECT_RATIO", "Internal error encountered."))
+    )
+
+
 def test_auth_errors_tell_the_user_how_to_fix_them():
     assert "ytk auth login" in str(errors.from_http_error(http_error(401)))
 

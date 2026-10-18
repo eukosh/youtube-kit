@@ -47,7 +47,9 @@ OPERATIONS: list[Callable] = []
 """Every operation, in import order. Adapters must expose each one (enforced by tests)."""
 
 MY_CHANNEL = "my_channel"
-_MY_CHANNEL_DOC = "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+_MY_CHANNEL_DOC = (
+    "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+)
 
 
 def operation[**P, R](

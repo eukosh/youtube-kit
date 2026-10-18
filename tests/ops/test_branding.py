@@ -1,9 +1,9 @@
 import pytest
 
-from youtube_kit.core.errors import InvalidRequest
+from youtube_kit.core.errors import InvalidRequest, YouTubeError
 from youtube_kit.core.ops import branding
 
-from ..fakes import CHANNEL_ID
+from ..fakes import CHANNEL_ID, http_error
 
 
 def branded(**settings) -> dict:
@@ -72,16 +72,21 @@ def test_set_watermark(api, my_channel, tmp_path):
         "timing": {"type": "offsetFromEnd", "offsetMs": "15000", "durationMs": "10000"},
     }
     assert (result.active, result.corner) == (True, "top-left")
+    # YouTube's empty gzip reply crashes httplib2 0.32, so the request asks for none.
+    api.oauth.watermarks().set().headers.__setitem__.assert_called_with("accept-encoding", "identity")
 
 
-def test_remove_watermark(api, my_channel):
+@pytest.mark.parametrize("gone", [False, True])
+def test_remove_watermark(api, my_channel, gone):
+    if gone:
+        api.oauth.watermarks().unset().execute.side_effect = http_error(404, "notFound")
     assert not branding.remove_watermark().active
     assert api.oauth.watermarks().unset.call_args.kwargs == {"channelId": CHANNEL_ID}
 
 
-def section_item(**snippet) -> dict:
+def section_item(section_id: str = "sec1", **snippet) -> dict:
     return {
-        "id": "sec1",
+        "id": section_id,
         "snippet": {"type": "multiplePlaylists", "title": "Best", "position": 1, **snippet},
         "contentDetails": {"playlists": ["PL1", "PL2"]},
     }
@@ -106,6 +111,27 @@ def test_add_section(api):
         "snippet": {"type": "multiplePlaylists", "title": "Best"},
         "contentDetails": {"playlists": ["PL1", "PL2"]},
     }
+
+
+def test_add_section_finds_its_section_when_youtube_names_another(api):
+    sections = api.oauth.channelSections()
+    sections.list().execute.side_effect = [
+        {"items": [{"id": "old"}]},
+        {"items": [section_item("old", type="recentUploads"), section_item("new")]},
+    ]
+    sections.insert().execute.return_value = section_item("old", type="recentUploads")
+
+    assert branding.add_section("multiple-playlists", title="Best", playlists=["PL1"]).id == "new"
+    assert sections.list.call_args_list[1].kwargs["part"] == "id"
+
+
+def test_add_section_never_returns_a_section_it_cannot_tell_is_new(api):
+    sections = api.oauth.channelSections()
+    sections.list().execute.side_effect = [{"items": [{"id": "old"}]}, {"items": [section_item("old")]}]
+    sections.insert().execute.return_value = section_item("old")
+
+    with pytest.raises(YouTubeError, match="don't add it again"):
+        branding.add_section("multiple-playlists", title="Best", playlists=["PL1"])
 
 
 def test_update_section_keeps_what_isnt_changed(api):

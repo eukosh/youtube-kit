@@ -24,7 +24,7 @@ ytk playlist create TITLE          ytk playlist update PLAYLIST     ytk playlist
 ytk playlist add PLAYLIST VIDEO    ytk playlist remove PLAYLIST VIDEO
 ytk playlist move PLAYLIST VIDEO --position N                       ytk playlist delete PLAYLIST
 
-ytk comment list [VIDEO] [--status held|spam|rejected] [--search Q]
+ytk comment list [VIDEO] [--status held|spam] [--search Q]
 ytk comment replies COMMENT        ytk comment post VIDEO TEXT      ytk comment reply COMMENT TEXT
 ytk comment edit COMMENT TEXT      ytk comment delete COMMENT
 ytk comment approve|hold COMMENT...                                 ytk comment reject COMMENT... [--ban-author]
@@ -70,7 +70,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 
 ## Several channels
 
-The user can be logged in to several channels, one `ytk auth login` each. `ytk channel mine` lists them (no API call) and marks the `default` one. Every command that reaches YouTube works on the default channel unless `--my-channel CHANNEL` (UC… ID or @handle of a logged-in channel) names another; `YOUTUBE_CHANNEL` sets it for a whole shell. `ytk auth switch CHANNEL` changes the stored default for every later command and for the MCP server, so don't run it on the user's behalf; pass `--my-channel` instead.
+The user can be logged in to several channels, one `ytk auth login` each. `ytk channel mine` lists them (no API call) and marks the `default` one. Every command that reaches YouTube works on the default channel unless `--my-channel CHANNEL` (UC… ID, @handle or exact title of a logged-in channel) names another; `YOUTUBE_CHANNEL` sets it for a whole shell. `ytk auth switch CHANNEL` changes the stored default for every later command and for the MCP server, so don't run it on the user's behalf; pass `--my-channel` instead.
 
 When the user has several channels and the task touches "my channel" without saying which, ask before writing anything. Read-only commands on someone else's content (`video get`, `search`, `channel get @someone`) don't care which of the user's channels you use. All logged-in channels share the project's daily quota. Handles are the ones stored at login; if one doesn't match after a rename, use the channel's `id` from `ytk channel mine`.
 
@@ -80,7 +80,7 @@ Commands that change things (`video upload/update/thumbnail/rate/delete`, `playl
 
 After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards, subtitles). `studio_url` is set only for videos on channels the user is logged in to here.
 
-What `video upload` sets when a flag is left out: category and both languages are copied from the channel's most recent public upload (`--category-id`, `--language`, `--audio-language` override), and YouTube's paid promotion and AI use disclosures are answered no (`--paid-promotion`, `--ai-content`; `--help` says what counts). `playlist create` copies the title and description language the same way (`--language` overrides). The user's own instructions, such as per-channel categories or languages, take precedence over these defaults.
+What `video upload` sets when a flag is left out: category and both languages are copied from the channel's most recent public upload (`--category-id`, `--language`, `--audio-language` override), and YouTube's paid promotion and AI use disclosures are answered no (`--paid-promotion`, `--ai-content`; `--help` says what counts). `video update` changes either answer only when its flag is passed (`--no-ai-content` sets it back to no). `playlist create` copies the title and description language the same way (`--language` overrides). The user's own instructions, such as per-channel categories or languages, take precedence over these defaults.
 
 `video delete`, `playlist delete` and `comment delete` exit 8 on the first call with what would be deleted. `--confirm` carries the user's yes for that exact target: show `details` to the user, and after they approve run `details.rerun`. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 

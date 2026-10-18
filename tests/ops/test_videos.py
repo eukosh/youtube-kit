@@ -91,22 +91,40 @@ def test_update_video_changes_only_given_fields(api):
     assert result.studio_url == "https://studio.youtube.com/video/dQw4w9WgXcQ/edit"
 
 
-def test_update_video_answers_disclosures_only_when_given(api):
+def test_update_video_writes_disclosures_and_status_only_when_given(api):
     api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
     api.oauth.videos().update().execute.return_value = video_item()
 
-    videos.update_video("dQw4w9WgXcQ", title="New")
+    api.oauth.videos().update().execute.return_value = {k: v for k, v in video_item().items() if k != "status"}
+    assert videos.update_video("dQw4w9WgXcQ", title="New").privacy is not None  # status filled in from the read
     untouched = api.oauth.videos().update.call_args.kwargs
+    api.oauth.videos().update().execute.return_value = video_item()
     videos.update_video("dQw4w9WgXcQ", paid_promotion=True, ai_content=False, audio_language="uk")
     answered = api.oauth.videos().update.call_args.kwargs
 
-    assert untouched["part"] == "snippet,status"
-    assert "paidProductPlacementDetails" not in untouched["body"]
-    assert "containsSyntheticMedia" not in untouched["body"]["status"]
+    assert untouched["part"] == "snippet"  # leaves status, and the AI answer YouTube never reports, alone
+    assert set(untouched["body"]) == {"id", "snippet"}
     assert answered["part"] == "snippet,status,paidProductPlacementDetails"
     assert answered["body"]["paidProductPlacementDetails"] == {"hasPaidProductPlacement": True}
     assert answered["body"]["status"]["containsSyntheticMedia"] is False
     assert answered["body"]["snippet"]["defaultAudioLanguage"] == "uk"
+
+
+def test_update_video_leaves_parts_it_does_not_change_alone(api):
+    # A read right after an update can be stale; writing that snippet back would undo the update.
+    api.oauth.videos().list().execute.return_value = {"items": [video_item()]}
+    api.oauth.videos().update().execute.return_value = {"id": "dQw4w9WgXcQ"}
+
+    result = videos.update_video("dQw4w9WgXcQ", paid_promotion=True)
+
+    sent = api.oauth.videos().update.call_args.kwargs
+    assert sent["part"] == "paidProductPlacementDetails"
+    assert set(sent["body"]) == {"id", "paidProductPlacementDetails"}
+    assert result.title == "Title"  # filled in from the read
+    api.oauth.videos().list.reset_mock()
+    with pytest.raises(InvalidRequest, match="at least one"):
+        videos.update_video("dQw4w9WgXcQ")
+    api.oauth.videos().list.assert_not_called()  # refused before spending quota
 
 
 def test_update_video_keeps_the_video_language(api):

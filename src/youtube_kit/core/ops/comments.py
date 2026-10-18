@@ -3,7 +3,7 @@ from typing import Any, Literal
 
 from .. import client, guard, parse
 from ..errors import OTHER_CHANNEL_HINT, Forbidden
-from ..models import Comment, CommentStatus, Deleted, Moderated, Page
+from ..models import Comment, Deleted, Moderated, Page
 from ..operation import operation
 from ..pagination import API_PAGE_SIZE, Limit, collect
 from ._common import delete_if_present, unique_ids
@@ -17,7 +17,7 @@ _STATUS = {api: ours for ours, api in _API_STATUS.items()}
 def list_comments(
     video: str | None = None,
     *,
-    status: CommentStatus = "published",
+    status: Literal["published", "held", "spam"] = "published",
     search: str | None = None,
     order: Literal["relevance", "time"] = "time",
     limit: Limit = 25,
@@ -28,7 +28,7 @@ def list_comments(
     Args:
         video: Video ID or URL. Omit for every video on your channel.
         status: Moderation status to list; spam is what YouTube flagged as likely spam. Anything but published
-            is only visible on your own videos.
+            is only visible on your own videos. YouTube can't list rejected comments.
         search: Only comments containing these words.
         order: Newest first, or most relevant first.
         limit: Maximum number of comments.

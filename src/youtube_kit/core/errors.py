@@ -1,6 +1,7 @@
 """Domain errors. Adapters map these to MCP tool errors and CLI exit codes."""
 
 import json
+import re
 import socket
 import ssl
 from typing import Any, ClassVar
@@ -100,8 +101,9 @@ _AUTH_REASONS = {"authError", "insufficientPermissions"}
 def from_http_error(error: HttpError) -> YouTubeError:
     """Translate a googleapiclient HttpError into the matching domain error."""
     status = error.resp.status
-    reason = _first_reason(error.content)
-    message = error.reason or f"HTTP {status}"
+    reason = http_reason(error)
+    # Some messages carry HTML, like "the request's <code>playlistId</code> parameter".
+    message = re.sub(r"<[^>]+>", "", error.reason or "") or f"HTTP {status}"
 
     if reason in _QUOTA_REASONS:
         return QuotaExceeded(f"{message} Daily quota resets at midnight Pacific Time.")
@@ -122,12 +124,15 @@ def from_http_error(error: HttpError) -> YouTubeError:
         return NotFound(message)
     if status == 400:
         return InvalidRequest(message)
-    return YouTubeError(f"YouTube API error (HTTP {status}): {message}")
+    # Messages like "Internal error encountered." say nothing; the reason sometimes does.
+    detail = f"HTTP {status}, {reason}" if reason else f"HTTP {status}"
+    return YouTubeError(f"YouTube API error ({detail}): {message}")
 
 
-def _first_reason(content: bytes) -> str | None:
+def http_reason(error: HttpError) -> str | None:
+    """The first error reason YouTube gave, like quotaExceeded or INVALID_ASPECT_RATIO."""
     try:
-        errors = json.loads(content)["error"]["errors"]
+        errors = json.loads(error.content)["error"]["errors"]
         return errors[0]["reason"]
     except (ValueError, KeyError, IndexError, TypeError):
         return None

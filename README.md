@@ -63,7 +63,7 @@ In clients configured with JSON (Claude Desktop, Cursor and others):
 
 In the ChatGPT desktop app: Settings → MCP servers → Add server → STDIO, with the command `uvx --from youtube-kit ytk mcp`. Codex shares that setting (`codex mcp add youtube -- uvx --from youtube-kit ytk mcp`).
 
-The server uses your `ytk auth login` logins. Not set up yet? The model can walk you through it with the `setup_guide` tool.
+The server uses your `ytk auth login` logins. If you also installed `ytk` with `uv tool install`, `uvx` runs that installed version: `uv tool upgrade youtube-kit` updates both. Not set up yet? The model can walk you through it with the `setup_guide` tool.
 
 ## What it covers
 
@@ -71,7 +71,7 @@ The server uses your `ytk auth login` logins. Not set up yet? The model can walk
 |---|---|
 | Analytics | totals, or breakdowns by day, month, video, country, device, OS, traffic source, playback location, age, gender or subscribed status |
 | Videos | get, categories, upload (resumable, with progress), update metadata, set thumbnail, wait for processing, like or dislike, check your rating, delete |
-| Comments | list (published, held for review, likely spam, rejected), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
+| Comments | list (published, held for review, likely spam), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
 | Playlists | list, get, items, create, update, set image, add, remove, move, delete |
 | Channel | get, recent activity, your logged-in channels, about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
 | Search | videos, channels and playlists, filtered by channel or date |
@@ -90,7 +90,7 @@ ytk video upload clip.mp4 --title Hi --my-channel @third   # use another channel
 ytk auth logout @third
 ```
 
-Commands work on the default channel unless `--my-channel` names another. MCP tools take `my_channel` the same way, so you can say "upload this to my gaming channel". `YOUTUBE_CHANNEL` sets the default for one shell or one MCP server.
+Commands work on the default channel unless `--my-channel` names another, by UC… ID, @handle or exact title. MCP tools take `my_channel` the same way, so you can say "upload this to my gaming channel". `YOUTUBE_CHANNEL` sets the default for one shell or one MCP server.
 
 **Why your own Google Cloud client.** YouTube's daily quota of 10,000 units belongs to a Cloud project. A client shipped inside `ytk` would split one quota among all its users. Yours is shared by your channels only.
 
@@ -119,7 +119,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 | `YOUTUBE_API_KEY` | API key for public data |
 | `YOUTUBE_CLIENT_SECRETS` | Path to the OAuth client JSON |
 | `YOUTUBE_TOKEN_DIR` | Directory of stored logins, one file per channel |
-| `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID or @handle), overriding `ytk auth switch` |
+| `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID, @handle or exact title), overriding `ytk auth switch` |
 | `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits) |
 
 </details>

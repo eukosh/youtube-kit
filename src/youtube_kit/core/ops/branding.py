@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .. import client, parse
-from ..errors import InvalidRequest
+from ..errors import InvalidRequest, YouTubeError
 from ..models import ChannelBranding, ChannelSection, Corner, Deleted, Watermark
 from ..operation import operation
 from ._common import changes, delete_if_present, image_upload, one, pick
@@ -60,7 +60,8 @@ def update_channel(
         description: Channel description.
         keywords: Channel keywords, replacing the current ones. An empty list removes them all.
         country: ISO 3166-1 alpha-2 country code.
-        language: Language of the channel's title and description, e.g. en or de.
+        language: Language of the channel's title and description, e.g. en or de. If the channel has none,
+            YouTube may pick one on any change; pass it to choose.
         trailer: Video (ID or URL) shown to visitors who aren't subscribed.
     """
     return _update_branding(
@@ -111,7 +112,10 @@ def set_watermark(
         timing["durationMs"] = str(duration * 1000)
     body = {"position": {"type": "corner", "cornerPosition": _API_CORNERS[corner]}, "timing": timing}
     channel_id = my_channel_id()
-    client.oauth().watermarks().set(channelId=channel_id, body=body, media_body=media).execute()
+    request = client.oauth().watermarks().set(channelId=channel_id, body=body, media_body=media)
+    # YouTube answers with an empty gzip body, which httplib2 0.32 crashes on decompressing.
+    request.headers["accept-encoding"] = "identity"
+    request.execute()
     # watermarks.set returns nothing and there is no way to read a watermark back.
     return Watermark(
         channel_id=channel_id,
@@ -125,9 +129,9 @@ def set_watermark(
 
 @operation(quota=51, destructive=True, idempotent=True, oauth=True)
 def remove_watermark() -> Watermark:
-    """Remove the watermark from your videos."""
+    """Remove the watermark from your videos. Succeeds when there is none."""
     channel_id = my_channel_id()
-    client.oauth().watermarks().unset(channelId=channel_id).execute()
+    delete_if_present(client.oauth().watermarks().unset(channelId=channel_id))
     return Watermark(channel_id=channel_id, active=False)
 
 
@@ -143,7 +147,7 @@ def list_sections(channel: str | None = None) -> list[ChannelSection]:
     return [_section(item) for item in response.get("items", [])]
 
 
-@operation(quota=50, oauth=True)
+@operation(quota=52, oauth=True)
 def add_section(
     kind: SectionType,
     *,
@@ -168,7 +172,24 @@ def add_section(
         raise InvalidRequest(f"A {kind} section needs a title.")
     snippet = {"type": _API_SECTION_TYPES[kind]} | changes(title=title, position=position)
     body = _section_body(snippet, _section_content(playlists, channels))
-    return _section(client.oauth().channelSections().insert(part="snippet,contentDetails", body=body).execute())
+    sections = client.oauth().channelSections()
+    existing = _section_ids(sections)
+    added = sections.insert(part="snippet,contentDetails", body=body).execute()
+    if added["id"] not in existing:
+        return _section(added)
+    # YouTube sometimes replies with another, existing section; the one added is the ID that's new.
+    response = sections.list(part="snippet,contentDetails", mine=True).execute()
+    new = [item for item in response.get("items", []) if item["id"] not in existing]
+    if len(new) != 1:
+        raise YouTubeError(
+            "YouTube added the section but named another one in its reply. "
+            "List the sections to find it; don't add it again."
+        )
+    return _section(new[0])
+
+
+def _section_ids(sections: Any) -> set[str]:
+    return {item["id"] for item in sections.list(part="id", mine=True).execute().get("items", [])}
 
 
 @operation(quota=51, destructive=True, idempotent=True, oauth=True)

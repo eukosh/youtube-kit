@@ -20,7 +20,7 @@
           }
         ],
         "default": null,
-        "description": "Whether AI made realistic content: a real person saying or doing something they didn't,\naltered footage of a real event or place, a realistic scene that didn't happen, or music that's\nthe video's focus. Not for scripts, captions, or obviously unreal content."
+        "description": "Whether AI made realistic content: a real person saying or doing something they didn't,\naltered footage of a real event or place, a realistic scene that didn't happen, or music that's\nthe video's focus. Not for scripts, captions, or obviously unreal content. Left out, the current\nanswer stays."
       },
       "audio_language": {
         "anyOf": [
@@ -92,7 +92,7 @@
           }
         ],
         "default": null,
-        "description": "Which of your logged-in channels to work on: UC… ID or @handle. Omit for the default channel."
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
       },
       "paid_promotion": {
         "anyOf": [

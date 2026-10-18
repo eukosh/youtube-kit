@@ -160,7 +160,7 @@ def auth_switch(channel: str, /) -> AuthStatus:
     The YOUTUBE_CHANNEL environment variable, when set, still takes precedence.
 
     Args:
-        channel: UC… ID or @handle of a logged-in channel.
+        channel: UC… ID, @handle or exact title of a logged-in channel.
     """
     return auth.switch(Settings.from_env(), channel)
 
@@ -170,7 +170,7 @@ def auth_logout(channel: str | None = None, /) -> AuthStatus:
     """Delete a channel's stored OAuth token. The API key, if any, is unaffected.
 
     Args:
-        channel: UC… ID or @handle of a logged-in channel. Omit for the default channel (YOUTUBE_CHANNEL when set).
+        channel: UC… ID, @handle or exact title of a logged-in channel. Omit for the default channel (YOUTUBE_CHANNEL when set).
     """
     return auth.logout(Settings.from_env(), channel)
 

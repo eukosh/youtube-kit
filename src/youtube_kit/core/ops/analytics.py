@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo
 
-from pydantic import Field
+from pydantic import BeforeValidator, Field
 
 from .. import client, parse
 from ..errors import InvalidRequest
@@ -25,6 +25,8 @@ _API_DIMENSIONS = {
     "subscribed": "subscribedStatus",
 }
 Dimension = Literal[*_API_DIMENSIONS]  # type: ignore[valid-type]
+# MCP arguments are snake_case, so models often write traffic_source for traffic-source.
+_Dashed = BeforeValidator(lambda value: value.replace("_", "-") if isinstance(value, str) else value)
 DEFAULT_METRICS = (
     "views",
     "estimatedMinutesWatched",
@@ -49,7 +51,7 @@ def get_analytics(
     *,
     since: str | None = None,
     until: str | None = None,
-    by: Dimension | None = None,
+    by: Annotated[Dimension | None, _Dashed] = None,
     metrics: list[str] | None = None,
     videos: list[str] | None = None,
     sort: str | None = None,

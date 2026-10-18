@@ -248,14 +248,29 @@ def _logins(settings: Settings) -> dict[str, dict]:
 
 
 def _match(ref: str, logins: dict[str, dict]) -> str:
-    """ID of the logged-in channel that `ref` names."""
-    key = parse.channel_ref(ref)
+    """ID of the logged-in channel that `ref` names: its ID, @handle, or exact title (ignoring case)."""
+    key, unparsed = None, None
+    try:
+        key = parse.channel_ref(ref)
+    except InvalidRequest as e:
+        unparsed = e  # a title can contain "/" or look like a URL
     for channel_id, info in logins.items():
         handle = (info.get("channel") or {}).get("handle") or ""
-        if (key.by == "id" and key.value == channel_id) or (key.by == "handle" and key.value.lower() == handle.lower()):
+        if key and (
+            (key.by == "id" and key.value == channel_id) or (key.by == "handle" and key.value.lower() == handle.lower())
+        ):
             return channel_id
+    title = ref.strip().casefold()
+    titled = [cid for cid, info in logins.items() if (info.get("channel") or {}).get("title", "").casefold() == title]
+    if title and len(titled) == 1:
+        return titled[0]
+    if unparsed:
+        raise unparsed
     logged_in = _describe(logins) if logins else "none"
-    raise NotAuthorized(f"Not logged in to {ref} (logged in: {logged_in}). {LOGIN_HINT} Pick that channel at Google.")
+    raise NotAuthorized(
+        f"Not logged in to {ref} (logged in: {logged_in}). Name a channel by its @handle, UC… ID or exact title. "
+        f"To add another one: {LOGIN_HINT} Pick that channel at Google."
+    )
 
 
 def _default_id(settings: Settings, logins: dict[str, dict]) -> str | None:
