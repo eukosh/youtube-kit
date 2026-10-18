@@ -42,6 +42,8 @@ Changelog = "https://github.com/eukosh/youtube-kit/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ytk = "youtube_kit.cli:main"
+# Lets `uvx youtube-kit mcp` work, the command MCP Registry clients build from the package name.
+youtube-kit = "youtube_kit.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.5,<0.10"]
