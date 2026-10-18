@@ -46,7 +46,8 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 
 - stdout: exactly one JSON document, null fields omitted.
 - Listings are `{"items": [...], "next_page_token": "..."}`. `--limit N` fetches across pages for you; pass `--page-token` to continue past it.
-- Failure: stdout is empty, stderr is `{"error": {"type", "message", "details"?}}`, and the exit code names the type:
+- Progress: `video upload` and `video status --wait` print `{"progress": {"done", "total", "percent"}}` lines to stderr as they go, about every 10%.
+- Failure: stdout is empty, the last stderr line is `{"error": {"type", "message", "details"?}}`, and the exit code names the type:
 
 | exit | type | what to do |
 |---|---|---|
@@ -78,7 +79,7 @@ When the user has several channels and the task touches "my channel" without say
 
 Commands that change things (`video upload/update/thumbnail/rate/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`, `channel update/banner`, `channel watermark set/remove`, `channel section add/update/delete`, `subscription add/remove`) act on the user's real, public channel. Run one when the user asked for that change. When you picked the target or wrote the content yourself (a title, a reply, which comments to reject), show it and get a yes first.
 
-After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards, subtitles). `studio_url` is set only for videos on channels the user is logged in to here.
+After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards, subtitles). `studio_url` is set only for videos on channels the user is logged in to here. YouTube keeps processing an upload after `video upload` returns: `video status VIDEO --wait` waits for it, and `video get` shows `upload_status` and `rejection_reason` if YouTube refused the video. YouTube may store tags in its own order.
 
 What `video upload` sets when a flag is left out: category and both languages are copied from the channel's most recent public upload (`--category-id`, `--language`, `--audio-language` override), and YouTube's paid promotion and AI use disclosures are answered no (`--paid-promotion`, `--ai-content`; `--help` says what counts). `video update` changes either answer only when its flag is passed (`--no-ai-content` sets it back to no). `playlist create` copies the title and description language the same way (`--language` overrides). The user's own instructions, such as per-channel categories or languages, take precedence over these defaults.
 

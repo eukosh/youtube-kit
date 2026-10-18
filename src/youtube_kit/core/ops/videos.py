@@ -128,12 +128,14 @@ def upload_video(
 
     Category and languages left out are copied from your most recent public upload (among your last 150),
     so the video matches the rest of your channel; with none, the category is 22 (People & Blogs).
+    YouTube keeps processing the video after this returns, and its duration and statistics appear only once
+    that ends. Checking whether processing has finished tells you when, or why it failed.
 
     Args:
         file: Path to the local video file.
         title: Video title.
         description: Video description.
-        tags: Keyword tags.
+        tags: Keyword tags. YouTube may store them in a different order.
         category_id: Category ID (see the video categories listing).
         language: Language of the title and description, e.g. en-US.
         audio_language: Language spoken in the video, e.g. en-US.
@@ -205,7 +207,8 @@ def update_video(
         video: Video ID or URL.
         title: New title.
         description: New description.
-        tags: New tags, replacing the current ones. An empty list removes all tags.
+        tags: New tags, replacing the current ones. An empty list removes all tags. YouTube may store them
+            in a different order.
         category_id: New category ID (see the video categories listing).
         language: Language of the title and description, e.g. en-US.
         audio_language: Language spoken in the video, e.g. en-US.
@@ -407,4 +410,7 @@ def _video(item: dict, *, mine: bool = False) -> Video:
         publish_at=status.get("publishAt"),
         paid_promotion=item.get("paidProductPlacementDetails", {}).get("hasPaidProductPlacement"),
         ai_content=status.get("containsSyntheticMedia"),
+        upload_status=status.get("uploadStatus"),
+        upload_failure_reason=status.get("failureReason"),
+        rejection_reason=status.get("rejectionReason"),
     )
