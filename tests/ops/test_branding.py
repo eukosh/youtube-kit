@@ -122,6 +122,7 @@ def test_add_section_finds_its_section_when_youtube_names_another(api):
     sections.insert().execute.return_value = section_item("old", type="recentUploads")
 
     assert branding.add_section("multiple-playlists", title="Best", playlists=["PL1"]).id == "new"
+    assert sections.list.call_args_list[1].kwargs["part"] == "id"
 
 
 def test_add_section_never_returns_a_section_it_cannot_tell_is_new(api):
