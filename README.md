@@ -126,7 +126,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 
 ## Built for agents
 
-- **JSON out, exit codes for failures.** Every command prints one JSON document on stdout. On failure, stdout stays empty, stderr gets `{"error": {"type": "not_found", "message": "..."}}`, and the exit code names the type: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout, 1 anything else. The [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md#output-contract) tells agents what to do about each. At a terminal you get colored JSON and plain-sentence errors.
+- **JSON out, exit codes for failures.** Every command prints one JSON document on stdout. On failure, stdout stays empty, the last line of stderr is `{"error": {"type": "not_found", "message": "..."}}`, and the exit code names the type: 2 bad input, 3 not found, 4 not authorized, 5 quota exceeded, 6 forbidden, 7 network, 8 confirmation required, 9 protected, 10 timeout, 1 anything else. The [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md#output-contract) tells agents what to do about each. At a terminal you get colored JSON and plain-sentence errors.
 - **Forgiving inputs.** Pass IDs or pasted YouTube URLs, `@handles` for channels, and dates or spans like `90d`.
 - **Quota costs up front.** Each command's `--help` and each MCP tool description states what it spends.
 - **One core.** The CLI and the MCP server are thin layers over the same code, and a test fails if either misses an operation.

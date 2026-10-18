@@ -337,7 +337,8 @@ def get_processing_status(
 
     Args:
         video: Video ID or URL.
-        wait: Keep checking every 10 seconds (1 quota unit each, with progress reports) until processing ends.
+        wait: Keep checking every 10 seconds (1 quota unit each) until processing ends, reporting progress
+            when YouTube gives it.
             If it hasn't ended within timeout, that's a timeout error, so a script can chain the next step on success.
         timeout: Seconds to wait at most. Callers that can't block for long should wait briefly and check again.
     """
