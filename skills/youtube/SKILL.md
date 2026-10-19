@@ -1,18 +1,19 @@
 ---
 name: youtube
-description: YouTube through the `ytk` CLI. Use when a task reads YouTube (search, videos, channels, playlists, comments), changes the user's own channel (uploads, metadata, playlists, comment moderation, branding, subscriptions, ratings), asks for channel analytics, or needs data behind a youtube.com or youtu.be link.
+description: YouTube through the `ytk` CLI. Use when a task reads YouTube (search, videos, channels, playlists, comments, transcripts of the user's videos), changes the user's own channel (uploads, metadata, captions, playlists, comment moderation, branding, subscriptions, ratings), asks for channel analytics (including audience retention, search terms, impressions and click-through rate), or needs data behind a youtube.com or youtu.be link.
 compatibility: Needs the ytk CLI (uv tool install youtube-kit) and YouTube API credentials.
 ---
 
 # YouTube via `ytk`
 
-`ytk` wraps the YouTube Data and Analytics APIs and prints JSON. If it isn't on PATH, install it with `uv tool install youtube-kit`, or run one-off commands as `uvx --from youtube-kit ytk ...`. Before the first use, see Setup.
+`ytk` wraps the YouTube Data, Analytics and Reporting APIs and prints JSON. If it isn't on PATH, install it with `uv tool install youtube-kit`, or run one-off commands as `uvx --from youtube-kit ytk ...`. Before the first use, see Setup.
 
 Commands:
 
 ```
 ytk search QUERY [--since D]
-ytk analytics [--since D] [--until D] [--by day|video|country|device|traffic-source|…] [--metrics M]... [--videos V]...
+ytk analytics [--since D] [--until D] [--by day|video|country|traffic-source|content-type|elapsed|…] [--metrics M]... [--videos V]...
+ytk impressions [--since D] [--until D] [--by day|video] [--videos V]...
 
 ytk video get VIDEO...             ytk video categories
 ytk video upload FILE --title T    ytk video status VIDEO [--wait]  ytk video update VIDEO
@@ -29,6 +30,11 @@ ytk comment replies COMMENT        ytk comment post VIDEO TEXT      ytk comment 
 ytk comment edit COMMENT TEXT      ytk comment delete COMMENT
 ytk comment approve|hold COMMENT...                                 ytk comment reject COMMENT... [--ban-author]
 
+ytk caption list VIDEO             ytk caption transcript VIDEO [--language L] [--format text|srt|vtt] [--translate-to L]
+ytk caption upload VIDEO FILE --language L [--name N] [--draft]
+ytk caption update VIDEO --language L [--name N] [--file F] [--draft|--no-draft]
+ytk caption delete VIDEO --language L [--name N]
+
 ytk channel get [CHANNEL]          ytk channel activity [CHANNEL]   ytk channel mine
 ytk channel update [--description] [--keywords K]... [--country] [--language] [--trailer VIDEO]
 ytk channel banner IMAGE           ytk channel watermark set IMAGE  ytk channel watermark remove
@@ -41,7 +47,11 @@ ytk upgrade
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
 
-`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. List options repeat (`--tags a --tags b`; `--empty-tags` clears). In usage lines, `[ARGS]` is the optional positional named in the parameter table. A video ID starting with `-` would read as a flag: put it after `--` or pass the URL.
+`caption transcript` reads what is said in one of the user's videos, from their captions or YouTube's automatic ones. Its `text` is paragraphs of about 30 seconds, each starting with its `[m:ss]` time. YouTube lets only the owner download captions: on other channels' videos it exits 6, and only `caption list` works.
+
+`impressions` prints `rows` of `impressions` and `ctr` (clicks per impression, 0.05 is 5%), and `missing_days` YouTube has no report for: the last two, and any outside what it keeps. The first run asks YouTube to start the reports and says so in `note`: they arrive within two days, covering the 30 days before.
+
+`ytk <command> --help` is the source of truth for flags. Inputs are forgiving: VIDEO, CHANNEL, and PLAYLIST take IDs or pasted YouTube URLs, CHANNEL also takes `@handle`, and dates take `2026-01-01`, full ISO datetimes, or (for `--since`) spans like `90d` / `4w`. List options repeat (`--tags a --tags b`; `--empty-tags` clears). In usage lines, `[ARGS]` is the optional positional named in the parameter table. A value starting with `-` would read as a flag: write `--sort=-views`, and put such a video ID after `--` or pass the URL.
 
 ## Output contract
 
@@ -79,17 +89,17 @@ When the user has several channels and the task touches "my channel" without say
 
 ## Changing the user's channel
 
-Commands that change things (`video upload/update/thumbnail/rate/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`, `channel update/banner`, `channel watermark set/remove`, `channel section add/update/delete`, `subscription add/remove`) act on the user's real, public channel. Run one when the user asked for that change. When you picked the target or wrote the content yourself (a title, a reply, which comments to reject), show it and get a yes first.
+Commands that change things (`video upload/update/thumbnail/rate/delete`, `caption upload/update/delete`, `playlist create/update/thumbnail/add/remove/move/delete`, `comment post/reply/edit/delete/approve/hold/reject`, `channel update/banner`, `channel watermark set/remove`, `channel section add/update/delete`, `subscription add/remove`) act on the user's real, public channel. Run one when the user asked for that change. When you picked the target or wrote the content yourself (a title, a reply, which comments to reject), show it and get a yes first.
 
-After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards, subtitles). `studio_url` is set only for videos on channels the user is logged in to here. YouTube keeps processing an upload after `video upload` returns: `video status VIDEO --wait` waits for it, and `video get` shows `upload_status` and `rejection_reason` if YouTube refused the video. YouTube may store tags in its own order.
+After `video upload` or `video update`, give the user both `url` and `studio_url` (YouTube Studio, for what the API can't do: end screens, cards). `studio_url` is set only for videos on channels the user is logged in to here. YouTube keeps processing an upload after `video upload` returns: `video status VIDEO --wait` waits for it, and `video get` shows `upload_status` and `rejection_reason` if YouTube refused the video. YouTube may store tags in its own order.
 
 What `video upload` sets when a flag is left out: category and both languages are copied from the channel's most recent public upload (`--category-id`, `--language`, `--audio-language` override), and YouTube's paid promotion and AI use disclosures are answered no (`--paid-promotion`, `--ai-content`; `--help` says what counts). `video update` changes either answer only when its flag is passed (`--no-ai-content` sets it back to no). `playlist create` copies the title and description language the same way (`--language` overrides). The user's own instructions, such as per-channel categories or languages, take precedence over these defaults.
 
-`video delete`, `playlist delete` and `comment delete` exit 8 on the first call with what would be deleted. `--confirm` carries the user's yes for that exact target: show `details` to the user, and after they approve run `details.rerun`. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
+`video delete`, `playlist delete`, `comment delete` and `caption delete` exit 8 on the first call with what would be deleted. `--confirm` carries the user's yes for that exact target: show `details` to the user, and after they approve run `details.rerun`. Deleting something already gone succeeds with `"already_gone": true`. Videos with more than 100 views, or public and uploaded more than 7 days ago, can't be deleted here at all (limits in `config.toml`; `ytk auth status` shows its path). Other removals (`playlist remove`, `channel section delete`, `subscription remove`, `video rate none`, `channel watermark remove`) are easy to redo and run without confirmation.
 
 ## Quota
 
-The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` about 1600 (each command's `--help` states its cost). Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` uses the separate Analytics API quota. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
+The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` about 1600 (each command's `--help` states its cost). Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` and `impressions` use the separate Analytics and Reporting API quotas. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
 
 ## Recipes
 
@@ -97,12 +107,20 @@ The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 
 # Titles of the 10 most-viewed videos of the last 90 days
 ytk analytics --by video --since 90d --limit 10 | jq -r '.rows[].video' | xargs ytk video get | jq -r '.[].title'
 
+# Where viewers drop off in a video, and the search terms that bring viewers
+ytk analytics --by elapsed --videos VIDEO | jq -c '.rows[] | [.elapsed, .audienceWatchRatio]'
+ytk analytics --by traffic-source-detail --traffic-source YT_SEARCH --since 90d
+
 # Daily views and watch time for one video
 ytk analytics --by day --videos VIDEO --metrics views --metrics estimatedMinutesWatched
 
 # Latest 10 uploads of a channel, with view counts
 ytk playlist items "$(ytk channel get @mkbhd | jq -r .uploads_playlist_id)" --limit 10 \
   | jq -r '.items[].video_id' | xargs ytk video get | jq '.[] | {title, views: .stats.views}'
+
+# Transcript of your latest upload
+ytk caption transcript "$(ytk playlist items "$(ytk channel get | jq -r .uploads_playlist_id)" --limit 1 \
+  | jq -r '.items[0].video_id')" | jq -r .text
 
 # Videos longer than 20 minutes from a list of URLs
 ytk video get URL1 URL2 | jq '.[] | select(.duration_seconds > 1200) | .url'

@@ -1,0 +1,91 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Permanently delete a caption track from one of your videos.\n\nWithout confirm, nothing is deleted and the error describes the track.\n\nQuota: 102 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "confirm": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The track's ID, passed only after the user has approved deleting this track."
+      },
+      "language": {
+        "description": "Language of the track, e.g. en or en-US.",
+        "type": "string"
+      },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+      },
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Name of the track, when the video has several in that language."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video",
+      "language"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "already_gone": {
+        "default": false,
+        "description": "Nothing to delete: it didn't exist or was already deleted.",
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "video",
+          "playlist",
+          "comment",
+          "section",
+          "caption"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "kind",
+      "id"
+    ],
+    "type": "object"
+  }
+}

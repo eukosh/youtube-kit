@@ -1,0 +1,146 @@
+{
+  "annotations": {
+    "destructive_hint": true,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Replace the file of a caption track on one of your videos, or show or hide the track.\n\nQuota: 502 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "draft": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Whether the track is hidden from viewers."
+      },
+      "file": {
+        "anyOf": [
+          {
+            "format": "path",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Path to the new caption file, at most 100 MB."
+      },
+      "language": {
+        "description": "Language of the track, e.g. en or en-US.",
+        "type": "string"
+      },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+      },
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Name of the track, when the video has several in that language."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video",
+      "language"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "draft": {
+        "default": false,
+        "description": "Not shown to viewers yet.",
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "description": "asr: made by YouTube's speech recognition. forced: shown when no track is chosen.",
+        "enum": [
+          "standard",
+          "asr",
+          "forced"
+        ],
+        "type": "string"
+      },
+      "language": {
+        "type": "string"
+      },
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "status": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "serving, syncing, or failed."
+      },
+      "updated_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "video_id",
+      "language",
+      "kind"
+    ],
+    "type": "object"
+  }
+}

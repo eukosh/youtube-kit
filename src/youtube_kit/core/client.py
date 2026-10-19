@@ -1,4 +1,4 @@
-"""googleapiclient Resources for the YouTube Data and Analytics APIs.
+"""googleapiclient Resources for the YouTube Data, Analytics and Reporting APIs.
 
 Resources are cached per thread because httplib2 connections are not thread-safe
 and the MCP server runs sync tools on worker threads. OAuth clients are cached per
@@ -44,6 +44,16 @@ def analytics() -> Resource:
         f"analytics:{token}",
         _mtime(token),
         lambda: _build("youtubeAnalytics", "v2", credentials=auth.load_credentials(token, auth.ANALYTICS)),
+    )
+
+
+def reporting() -> Resource:
+    """YouTube Reporting client (daily bulk reports) for the channel being worked on."""
+    token = auth.token_file(Settings.from_env())
+    return _cached(
+        f"reporting:{token}",
+        _mtime(token),
+        lambda: _build("youtubereporting", "v1", credentials=auth.load_credentials(token, auth.ANALYTICS)),
     )
 
 

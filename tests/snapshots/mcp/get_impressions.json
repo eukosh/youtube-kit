@@ -1,0 +1,161 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Thumbnail impressions and click-through rate for your channel, which YouTube Analytics doesn't offer.\n\nThey come from YouTube's daily bulk reports. The first call asks YouTube to start making them: the first\nones arrive within two days and cover the 30 days before. YouTube keeps daily reports for 60 days, those\nfirst 30 days for 30. ctr is clicks per impression: 0.05 is 5%. Uses the YouTube Reporting API; enable it\nin the same Google Cloud project.\n\nQuota: no YouTube Data API units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "by": {
+        "anyOf": [
+          {
+            "enum": [
+              "day",
+              "video"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Break the numbers down by day or by video. Omit for totals."
+      },
+      "limit": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Maximum number of rows by video, most impressions first. 25 by default."
+      },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+      },
+      "since": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "First day, inclusive: 2026-01-01, or 90d / 4w before until. Defaults to 28 days before until."
+      },
+      "until": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Last day, inclusive: 2026-01-31, or 7d / 1w ago. Defaults to today."
+      },
+      "videos": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only these videos (IDs or URLs)."
+      }
+    },
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "columns": {
+        "description": "Dimension first (if any), then the metrics, in request order.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "missing_days": {
+        "description": "Days YouTube has no report for: the last two, and any outside what it keeps.",
+        "items": {
+          "format": "date",
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "note": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "rows": {
+        "items": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "since": {
+        "format": "date",
+        "type": "string"
+      },
+      "until": {
+        "format": "date",
+        "type": "string"
+      }
+    },
+    "required": [
+      "since",
+      "until",
+      "columns",
+      "rows",
+      "missing_days"
+    ],
+    "type": "object"
+  }
+}

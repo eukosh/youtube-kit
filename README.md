@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/eukosh/youtube-kit/blob/main/LICENSE)
 [![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/eukosh/youtube-kit)
 
-YouTube CLI (`ytk`) and MCP server, built for agents and humans. Let Claude Code, Codex, Cursor, Claude Desktop or ChatGPT work on your channel: analytics, uploads, metadata, playlists and comment moderation. It handles several channels, and you can run the same commands in your own terminal.
+YouTube CLI (`ytk`) and MCP server, built for agents and humans. Let Claude Code, Codex, Cursor, Claude Desktop or ChatGPT work on your channel: analytics, transcripts, uploads, metadata, playlists and comment moderation. It handles several channels, and you can run the same commands in your own terminal.
 
 ![Claude Code answering "what were my top 3 videos in the last 28 days?" with ytk](https://raw.githubusercontent.com/eukosh/youtube-kit/main/docs/demo/agent.gif)
 
@@ -24,6 +24,7 @@ You need a Google account with a YouTube channel, and [uv](https://docs.astral.s
 ```sh
 ytk analytics --by video --since 90d --limit 5     # your top videos of the last 90 days
 ytk comment list --status held                     # comments waiting for review
+ytk caption transcript VIDEO | jq -r .text         # what you say in one of your videos
 ytk channel get @mkbhd | jq .stats                 # any public channel
 ```
 
@@ -72,15 +73,17 @@ The server uses your `ytk auth login` logins. If you also installed `ytk` with `
 
 | Area | Operations |
 |---|---|
-| Analytics | totals, or breakdowns by day, month, video, country, device, OS, traffic source, playback location, age, gender or subscribed status |
+| Analytics | totals, or breakdowns by day, month, video, country, device, OS, traffic source and what's behind it (search terms, suggesting videos, sites), playback location, age, gender, subscribed status, content type (long-form, Shorts, live) or sharing service; audience retention of a video; filters by video, content type, country or traffic source |
+| Impressions | thumbnail impressions and click-through rate, in total, by day or by video |
 | Videos | get, categories, upload (resumable, with progress), update metadata, set thumbnail, wait for processing, like or dislike, check your rating, delete |
+| Captions | transcripts of your videos, from your captions or YouTube's automatic ones, optionally machine-translated; list tracks on any video; upload, replace, hide, delete |
 | Comments | list (published, held for review, likely spam), replies, post, reply, edit, delete, approve, hold, reject, ban the author |
 | Playlists | list, get, items, create, update, set image, add, remove, move, delete |
 | Channel | get, recent activity, your logged-in channels, about info (description, keywords, country, language, trailer), banner, watermark, home page sections |
 | Search | videos, channels and playlists, filtered by channel or date |
 | Subscriptions | list, subscribe, unsubscribe |
 
-Not covered: captions, localizations, live streaming and channel memberships. `ytk --help` lists every command, and the [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md) fits them on one page with `jq` recipes.
+Not covered: localizations, live streaming and channel memberships. `ytk --help` lists every command, and the [skill](https://github.com/eukosh/youtube-kit/blob/main/skills/youtube/SKILL.md) fits them on one page with `jq` recipes.
 
 ## Channels and login
 
@@ -106,7 +109,7 @@ Commands work on the default channel unless `--my-channel` names another, by UCâ
 
 The guided setup does this:
 
-1. In the [Google Cloud Console](https://console.cloud.google.com), create a project and enable **YouTube Data API v3** and **YouTube Analytics API**.
+1. In the [Google Cloud Console](https://console.cloud.google.com), create a project and enable **YouTube Data API v3**, **YouTube Analytics API** and **YouTube Reporting API** (for impressions and click-through rate).
 2. In **Google Auth Platform**, click *Get started* (audience *External*). On *Branding*, fill in the home page (`https://github.com/eukosh/youtube-kit`), the privacy policy link (`https://github.com/eukosh/youtube-kit/blob/main/PRIVACY.md`) and the authorized domain `github.com`; Google won't publish without them. Then on *Audience* click *Publish app*. While the app is in *Testing*, only listed test users can sign in and Google logs them out after 7 days.
 3. Under *Clients*, create a client of type *Desktop app* and download its JSON.
 4. `ytk auth login --client-secrets path/to/client_secret.json`. Google warns that it hasn't verified the app: it's your own, so click *Advanced*, then *Go to ytk (unsafe)*.
@@ -139,7 +142,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 
 ## Deleting
 
-YouTube has no trash, and agents make mistakes. So deleting videos, playlists and comments is guarded:
+YouTube has no trash, and agents make mistakes. So deleting videos, playlists, comments and caption tracks is guarded:
 
 - **Two steps.** The first call deletes nothing. At a terminal you get a `[y/N]` prompt. An agent gets exit 8 with a description of the target and must run the command again with `--confirm <id>`, so the approval always names the exact thing being deleted.
 - **Damage limit.** A video with more than 100 views, or one that is public and was uploaded more than 7 days ago, can't be deleted here at all (exit 9). Delete those in YouTube Studio. The limits live in `config.toml` (`ytk auth status` shows where):
@@ -152,7 +155,7 @@ YouTube has no trash, and agents make mistakes. So deleting videos, playlists an
 - **Harness approval.** Have your agent ask you before every delete. In Claude Code, add this to `.claude/settings.json`:
 
   ```json
-  {"permissions": {"ask": ["Bash(ytk video delete:*)", "Bash(ytk playlist delete:*)", "Bash(ytk comment delete:*)"]}}
+  {"permissions": {"ask": ["Bash(ytk video delete:*)", "Bash(ytk playlist delete:*)", "Bash(ytk comment delete:*)", "Bash(ytk caption delete:*)"]}}
   ```
 - **Idempotent.** Deleting something that is already gone succeeds with `"already_gone": true`.
 

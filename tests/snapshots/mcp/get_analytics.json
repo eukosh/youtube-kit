@@ -21,10 +21,14 @@
               "device",
               "os",
               "traffic-source",
+              "traffic-source-detail",
               "playback-location",
               "age",
               "gender",
-              "subscribed"
+              "subscribed",
+              "content-type",
+              "sharing-service",
+              "elapsed"
             ],
             "type": "string"
           },
@@ -33,7 +37,36 @@
           }
         ],
         "default": null,
-        "description": "Break the numbers down by this dimension; its column is named as given here. Omit for totals.\nBy month, the range widens to whole months."
+        "description": "Break the numbers down by this dimension; its column is named as given here. Omit for totals.\nBy month, the range widens to whole months. By elapsed: the audience retention of exactly one\nvideo, a row per 1% of its length (0.01 to 1). By traffic-source-detail, which needs\ntraffic_source: the search terms behind YT_SEARCH, the videos behind RELATED_VIDEO, the sites\nbehind EXT_URL."
+      },
+      "content_type": {
+        "anyOf": [
+          {
+            "enum": [
+              "videoOnDemand",
+              "shorts",
+              "liveStream"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only long-form videos (videoOnDemand), shorts, or live streams (liveStream), as the\ncontent-type breakdown names them. Not by elapsed."
+      },
+      "country": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Only viewers in this country, e.g. US. Not by elapsed."
       },
       "limit": {
         "anyOf": [
@@ -46,7 +79,7 @@
           }
         ],
         "default": null,
-        "description": "Maximum number of rows. Breaking down by video returns at most 200, 25 by default;\nother breakdowns return every row by default."
+        "description": "Maximum number of rows. Breaking down by video returns at most 200, 25 by default; by\ntraffic-source-detail, at most 25. Other breakdowns return every row by default."
       },
       "metrics": {
         "anyOf": [
@@ -61,7 +94,7 @@
           }
         ],
         "default": null,
-        "description": "Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,\nestimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view\nduration, likes, comments, and subscribers gained and lost. By device, os, traffic-source,\nplayback-location or subscribed, only watch metrics work (views, estimatedMinutesWatched,\naverageViewDuration, averageViewPercentage), and those are the default. By age or gender,\nonly viewerPercentage works."
+        "description": "Metric names from https://developers.google.com/youtube/analytics/metrics, e.g. views,\nestimatedMinutesWatched, subscribersGained. Defaults to views, watch time, average view\nduration, likes, comments, and subscribers gained and lost. By device, os, traffic-source,\nplayback-location or subscribed, only watch metrics work (views, estimatedMinutesWatched,\naverageViewDuration, averageViewPercentage), and those are the default. By age or gender,\nonly viewerPercentage works. By elapsed: audienceWatchRatio (share of viewers watching at that\npoint, above 1 with rewatches) and relativeRetentionPerformance (0 to 1, against videos of\nsimilar length) by default, or startedWatching and stoppedWatching. By traffic-source-detail:\nviews and estimatedMinutesWatched. By sharing-service: shares."
       },
       "my_channel": {
         "anyOf": [
@@ -97,7 +130,19 @@
           }
         ],
         "default": null,
-        "description": "Metric or dimension to sort by; prefix with - for descending, e.g. -views. Defaults to\nchronological by day or month, and to the first metric, descending, by anything else."
+        "description": "Metric or dimension to sort by; prefix with - for descending, e.g. -views. Defaults to\nchronological by day, month or elapsed, and to the first metric, descending, by anything else."
+      },
+      "traffic_source": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The source to break down by traffic-source-detail, as the traffic-source breakdown names\nit, e.g. YT_SEARCH. Only with that breakdown."
       },
       "until": {
         "anyOf": [

@@ -21,7 +21,7 @@ from .core.config import Settings
 from .core.models import Update
 
 INSTRUCTIONS = """\
-Read and manage YouTube through the YouTube Data API v3 and YouTube Analytics.
+Read and manage YouTube through the YouTube Data API v3, YouTube Analytics and the YouTube Reporting API.
 
 - Video, channel, and playlist parameters accept IDs or pasted YouTube URLs; channels also accept @handles.
 - Listings return at most `limit` items plus a next_page_token; pass it back as page_token to continue.
