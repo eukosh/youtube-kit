@@ -143,7 +143,7 @@ def test_editable_installs_are_left_to_git(check_on, monkeypatch):
 def test_env_var_ci_and_config_turn_it_off(check_on, monkeypatch, tmp_path):
     assert updates.enabled(settings())
 
-    monkeypatch.setenv(updates.OPT_OUT_ENV, "1")
+    monkeypatch.setenv(updates.OPT_OUT_ENV, "")
     assert not updates.enabled(settings())
     monkeypatch.delenv(updates.OPT_OUT_ENV)
 
@@ -160,6 +160,9 @@ def test_env_var_ci_and_config_turn_it_off(check_on, monkeypatch, tmp_path):
     assert not updates.enabled(settings())
 
     config.write_text("not toml [")
+    assert updates.enabled(settings())
+
+    config.write_bytes(b"\xff")
     assert updates.enabled(settings())
 
 

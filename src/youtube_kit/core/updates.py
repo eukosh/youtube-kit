@@ -75,11 +75,11 @@ def _replaces_itself(kind: Literal["uv_tool", "pipx"], argv: list[str]) -> Insta
 
 def enabled(settings: Settings) -> bool:
     """Off with YTK_NO_UPDATE_CHECK, NO_UPDATE_NOTIFIER or CI, `[updates] check = false`, or an editable install."""
-    if any(os.environ.get(name) for name in _OPT_OUT_ENVS) or install() is None:
+    if any(name in os.environ for name in _OPT_OUT_ENVS) or install() is None:
         return False
     try:
         table = tomllib.loads(settings.config_file.read_text()).get("updates")
-    except (OSError, tomllib.TOMLDecodeError):
+    except (OSError, ValueError):  # ValueError covers bad TOML and bad UTF-8
         return True
     return not (isinstance(table, dict) and table.get("check") is False)
 
