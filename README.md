@@ -124,7 +124,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 | `YOUTUBE_TOKEN_DIR` | Directory of stored logins, one file per channel |
 | `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID, @handle or exact title), overriding `ytk auth switch` |
 | `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits, update check) |
-| `YTK_NO_UPDATE_CHECK` | Any value turns off the daily check for a newer release |
+| `YTK_NO_UPDATE_CHECK` | Set (even empty): no daily check for a newer release |
 
 </details>
 

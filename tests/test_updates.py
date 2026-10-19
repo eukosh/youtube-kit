@@ -117,6 +117,26 @@ def test_unknown_installs_get_a_pip_command_to_run_themselves(monkeypatch, tmp_p
     assert command in install.command
 
 
+@pytest.mark.parametrize(
+    ("executable", "command"),
+    [
+        (r"C:\Python\python.exe", r"C:\Python\python.exe -m pip install --upgrade youtube-kit"),
+        (
+            r"C:\Program Files\Python\python.exe",
+            r'& "C:\Program Files\Python\python.exe" -m pip install --upgrade youtube-kit',
+        ),
+    ],
+)
+def test_windows_commands_paste_into_powershell(monkeypatch, tmp_path, executable, command):
+    monkeypatch.setattr(updates, "_editable_source", lambda: None)
+    monkeypatch.setattr(sys, "prefix", str(tmp_path))
+    monkeypatch.setattr(sys, "executable", executable)
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(updates.os, "name", "nt")
+
+    assert updates.install().command == command
+
+
 def test_windows_tool_installs_upgrade_after_ytk_exits(monkeypatch, tool_env):
     monkeypatch.setattr(updates, "_editable_source", lambda: None)
     monkeypatch.setattr(sys, "prefix", str(tool_env))

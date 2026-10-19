@@ -58,19 +58,27 @@ def install() -> Install | None:
     # uvx's cached environment (archive-v0 in uv 0.9), kept until `@latest` refreshes it.
     if os.path.basename(os.path.dirname(prefix)).startswith("archive-"):
         refresh = ["uvx", f"{APP_NAME}@latest", "--version"]
-        return Install("uvx", refresh, shlex.join(refresh))
+        return Install("uvx", refresh, _join(refresh))
     if importlib.util.find_spec("pip"):
         pip = [sys.executable, "-m", "pip", "install", "--upgrade", APP_NAME]
     else:  # e.g. a venv made by `uv venv`
         pip = ["uv", "pip", "install", "--upgrade", APP_NAME, "--python", sys.executable]
-    return Install("pip", None, shlex.join(pip))
+    return Install("pip", None, _join(pip))
 
 
 def _replaces_itself(kind: Literal["uv_tool", "pipx"], argv: list[str]) -> Install:
     # Windows locks the running ytk's files.
     if os.name == "nt":
-        return Install(kind, None, shlex.join(argv))
+        return Install(kind, None, _join(argv))
     return Install(kind, argv, "ytk upgrade")
+
+
+def _join(argv: list[str]) -> str:
+    """A command line to paste into this platform's shell."""
+    if os.name != "nt":
+        return shlex.join(argv)
+    line = subprocess.list2cmdline(argv)
+    return f"& {line}" if line.startswith('"') else line  # PowerShell runs a quoted path only after &
 
 
 def enabled(settings: Settings) -> bool:
@@ -174,7 +182,7 @@ def upgrade() -> UpgradeResult:
             f"ytk can't upgrade itself here. Run `{target.command}`, or your installer's upgrade command.",
             details={"command": target.command},
         )
-    command = shlex.join(target.argv)
+    command = _join(target.argv)
     try:
         done = subprocess.run(target.argv, capture_output=True, text=True, timeout=600, check=False)
     except (OSError, subprocess.TimeoutExpired) as e:
