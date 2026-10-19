@@ -108,7 +108,7 @@ def list_video_categories(*, region: str = "US") -> list[VideoCategory]:
     ]
 
 
-@operation(quota=1607, oauth=True)  # upload + at most 7 reads in copied_from_recent_uploads
+@operation(quota=7, bucket="upload", oauth=True)  # at most 7 reads in copied_from_recent_uploads
 def upload_video(
     file: Path,
     *,
@@ -287,10 +287,10 @@ def set_thumbnail(video: str, image: Path) -> ThumbnailResult:
 
     Args:
         video: Video ID or URL.
-        image: Path to a JPEG or PNG, at most 2 MB.
+        image: Path to a JPEG or PNG, at most 50 MB.
     """
     video_id = parse.video_id(video)
-    media = image_upload(image, max_mb=2)
+    media = image_upload(image, max_mb=50)
     response = client.oauth().thumbnails().set(videoId=video_id, media_body=media).execute()
     thumbnails = (response.get("items") or [{}])[0]
     best = thumbnails.get("maxres") or thumbnails.get("high") or thumbnails.get("default") or {}

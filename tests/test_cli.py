@@ -118,7 +118,7 @@ def test_upload_takes_the_file_positionally(capsys, api, tmp_path):
 def test_help_prints_no_json(capsys):
     code, out, _ = run(capsys, "search", "--help")
     assert code == 0
-    assert "Quota: 100 units per page" in out
+    assert "100 daily search calls per page" in out
 
 
 def test_auth_status_needs_no_network(capsys):

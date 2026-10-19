@@ -11,7 +11,7 @@
     "additionalProperties": false,
     "properties": {
       "image": {
-        "description": "Path to a JPEG or PNG, at most 2 MB.",
+        "description": "Path to a JPEG or PNG, at most 50 MB.",
         "format": "path",
         "type": "string"
       },

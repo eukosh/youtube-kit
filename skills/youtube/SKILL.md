@@ -99,7 +99,7 @@ What `video upload` sets when a flag is left out: category and both languages ar
 
 ## Quota
 
-The project has 10,000 units a day. Reads cost 1 unit per request, `search` 100 per page of 50, writes 50, `video upload` about 1600 (each command's `--help` states its cost). Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` and `impressions` use the separate Analytics and Reporting API quotas. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
+The project has 10,000 units a day. Reads cost 1 unit per request, writes 50 (each command's `--help` states its cost). `search` and `video upload` have their own limits of 100 calls a day: one per page of 50 search results, one per upload. Resolving an `@handle` or channel URL costs 1 more unit, as does acting on "your channel" by default (e.g. `comment list` without a video). A UC… ID needs no lookup. `analytics` and `impressions` use the separate Analytics and Reporting API quotas. Prefer the cheap path: to find a channel's recent videos, use `channel get` → `uploads_playlist_id` → `playlist items` → `video get`, rather than `search --channel`.
 
 ## Recipes
 
