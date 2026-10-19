@@ -9,14 +9,14 @@ from ..pagination import collect
 from ._common import channel_url, playlist_url, video_url
 from .channels import resolve_channel_id
 
-# Lower cap than other listings: every page of 50 costs 100 units of a 10,000 daily quota.
+# Lower cap than other listings: a project gets only 100 search calls a day, one per page of 50.
 SearchLimit = Annotated[int, Field(ge=1, le=200)]
 
 _ID_KEY = {"video": "videoId", "channel": "channelId", "playlist": "playlistId"}
 _URL = {"video": video_url, "channel": channel_url, "playlist": playlist_url}
 
 
-@operation(quota=100, read_only=True, idempotent=True, paginated=True)
+@operation(quota=0, bucket="search", read_only=True, idempotent=True, paginated=True)
 def search(
     query: str,
     *,
@@ -32,7 +32,7 @@ def search(
     Args:
         query: Search terms.
         kind: What to search for.
-        limit: Maximum number of results. Each page of up to 50 costs 100 quota units.
+        limit: Maximum number of results.
         order: Sort order.
         channel: Only results from this channel: UC… ID, @handle, or channel URL.
         since: Only results published at or after this date or datetime (2026-01-01), or this long ago (90d, 4w).

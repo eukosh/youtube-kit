@@ -160,7 +160,7 @@ This stops mistakes, not a determined agent. Anything holding your OAuth token c
 
 ## Quota
 
-Google gives each Cloud project 10,000 units a day, resetting at midnight Pacific time. Reads cost 1 unit per request, `search` 100 per page of 50 results, most writes 50, guarded deletes 52 (they look up the target and check ownership first), and an upload 1,600. `ytk analytics` uses the separate YouTube Analytics API quota.
+Google gives each Cloud project 10,000 units a day, resetting at midnight Pacific time. Reads cost 1 unit per request, most writes 50, and guarded deletes 52 (they look up the target and check ownership first). `search` and uploads don't use those units: each gets its own 100 calls a day, one per page of 50 search results or per upload. `ytk analytics` uses the separate YouTube Analytics API quota.
 
 ## Contributing
 
