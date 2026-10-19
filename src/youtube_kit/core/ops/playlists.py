@@ -240,11 +240,11 @@ def set_playlist_thumbnail(playlist: str, image: Path) -> PlaylistImage:
 
     Args:
         playlist: Playlist ID or URL.
-        image: Path to a square JPEG or PNG, at most 2 MB.
+        image: Path to a square JPEG or PNG, at most 50 MB.
     """
     playlist_id = parse.playlist_id(playlist)
     path = existing_file(image)
-    media = image_upload(path, max_mb=2)
+    media = image_upload(path, max_mb=50)
     size = image_size(path)
     if size and size[0] != size[1]:
         raise InvalidRequest(f"Playlist images must be square; {path.name} is {size[0]}x{size[1]}.")

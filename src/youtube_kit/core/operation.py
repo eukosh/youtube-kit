@@ -13,6 +13,7 @@ import functools
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Literal
 
 from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
@@ -25,6 +26,8 @@ from .errors import LOGIN_HINT, NETWORK_ERRORS, NetworkError, NotAuthorized, fro
 class OperationInfo:
     quota: int
     """Quota units per API request. Paginated operations make one request per page of 50."""
+    bucket: Literal["search", "upload"] | None
+    """YouTube's separate daily call limit this operation draws one call from; quota then counts only extra reads."""
     read_only: bool
     destructive: bool
     """Overwrites or deletes existing data (as opposed to only adding new data)."""
@@ -37,10 +40,14 @@ class OperationInfo:
 
     @property
     def quota_note(self) -> str:
+        per_page = " per page of up to 50 results" if self.paginated else ""
+        units = f"{self.quota} unit{'s' if self.quota != 1 else ''}"
+        if self.bucket:
+            extra = f", plus up to {units}" if self.quota else ""
+            return f"Quota: 1 of the project's 100 daily {self.bucket} calls{per_page}{extra}."
         if self.quota == 0:
             return "Quota: no YouTube Data API units."
-        units = f"{self.quota} unit{'s' if self.quota != 1 else ''}"
-        return f"Quota: {units} per page of up to 50 results." if self.paginated else f"Quota: {units}."
+        return f"Quota: {units}{per_page}."
 
 
 OPERATIONS: list[Callable] = []
@@ -55,6 +62,7 @@ _MY_CHANNEL_DOC = (
 def operation[**P, R](
     *,
     quota: int,
+    bucket: Literal["search", "upload"] | None = None,
     read_only: bool = False,
     destructive: bool = False,
     idempotent: bool = False,
@@ -65,6 +73,7 @@ def operation[**P, R](
     def decorate(fn: Callable[P, R]) -> Callable[P, R]:
         meta = OperationInfo(
             quota=quota,
+            bucket=bucket,
             read_only=read_only,
             destructive=destructive,
             idempotent=idempotent,

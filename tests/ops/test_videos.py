@@ -270,8 +270,9 @@ def test_upload_video_validates_before_calling_the_api(api, tmp_path):
 
 def test_set_thumbnail_rejects_large_files(api, tmp_path):
     image = tmp_path / "big.jpg"
-    image.write_bytes(b"x" * (2 * 1024 * 1024 + 1))
-    with pytest.raises(InvalidRequest, match="2 MB"):
+    with image.open("wb") as file:
+        file.truncate(50 * 1024 * 1024 + 1)
+    with pytest.raises(InvalidRequest, match="50 MB"):
         videos.set_thumbnail("dQw4w9WgXcQ", image)
 
 

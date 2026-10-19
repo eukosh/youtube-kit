@@ -6,7 +6,7 @@
     "read_only_hint": true,
     "title": null
   },
-  "description": "Search YouTube for videos, channels, or playlists.\n\nQuota: 100 units per page of up to 50 results.",
+  "description": "Search YouTube for videos, channels, or playlists.\n\nQuota: 1 of the project's 100 daily search calls per page of up to 50 results.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
@@ -34,7 +34,7 @@
       },
       "limit": {
         "default": 10,
-        "description": "Maximum number of results. Each page of up to 50 costs 100 quota units.",
+        "description": "Maximum number of results.",
         "maximum": 200,
         "minimum": 1,
         "type": "integer"
