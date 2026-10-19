@@ -5,6 +5,19 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.7.0](https://github.com/eukosh/youtube-kit/compare/v0.6.0...v0.7.0) (2026-10-19)
+
+
+### Added
+
+* read your videos' transcripts, manage captions, and see impressions and click-through rate ([#19](https://github.com/eukosh/youtube-kit/issues/19)) ([325a7f6](https://github.com/eukosh/youtube-kit/commit/325a7f62ba6d027a7242b54dd96fc285650db1d9))
+* tell you when a newer ytk is out, and upgrade it with `ytk upgrade` ([#16](https://github.com/eukosh/youtube-kit/issues/16)) ([d29aa07](https://github.com/eukosh/youtube-kit/commit/d29aa078fb0ce2f8dedf19379d5a01eb56828056))
+
+
+### Fixed
+
+* state search and upload limits as YouTube now counts them, and accept thumbnails up to 50 MB ([#18](https://github.com/eukosh/youtube-kit/issues/18)) ([9e079fb](https://github.com/eukosh/youtube-kit/commit/9e079fbc408cd05b096acc97bcf0ca1ff1124e0c))
+
 ## [0.6.0](https://github.com/eukosh/youtube-kit/compare/v0.5.0...v0.6.0) (2026-10-18)
 
 
