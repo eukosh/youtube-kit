@@ -6,6 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![Python](https://img.shields.io/pypi/pyversions/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/eukosh/youtube-kit/blob/main/LICENSE)
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/eukosh/youtube-kit)
 
 YouTube CLI (`ytk`) and MCP server, built for agents and humans. Let Claude Code, Codex, Cursor, Claude Desktop or ChatGPT work on your channel: analytics, uploads, metadata, playlists and comment moderation. It handles several channels, and you can run the same commands in your own terminal.
 
