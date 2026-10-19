@@ -89,7 +89,7 @@ def run() -> None:
     """Serve over stdio."""
     settings = Settings.from_env()
     updates.refresh_in_background(settings)
-    if update := updates.notice(settings):
+    if update := updates.notice(settings, stamp="noticed_mcp"):
         mcp.instructions = instructions_with(update)
     mcp.run(show_banner=False)
 
@@ -97,7 +97,7 @@ def run() -> None:
 def instructions_with(update: Update) -> str:
     """The server has no terminal to print a reminder on, so the model passes it on."""
     return (
-        f"{INSTRUCTIONS}- youtube-kit {update.latest} is out; this server runs {update.current}. Mention it to the"
-        f" user once: they upgrade by running `{update.command}` in a terminal, then restart this MCP server."
-        f" What changed: {update.changelog}\n"
+        f"{INSTRUCTIONS}- youtube-kit {update.latest} is out; this server runs {update.current}. Tell the user once:"
+        f" run `{update.command}` in a terminal, then restart the MCP client so it starts the new version."
+        f" Changelog: {update.changelog}\n"
     )

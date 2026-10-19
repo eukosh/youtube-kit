@@ -281,11 +281,11 @@ class Update(BaseModel):
     current: str = Field(description="The installed version.")
     latest: str = Field(description="The newest release on PyPI.")
     command: str = Field(description="What upgrades this install.")
-    changelog: str = Field(description="What changed between releases.")
+    changelog: str = Field(description="Link to the changelog.")
 
 
 class UpgradeResult(BaseModel):
     previous: str = Field(description="The version before the upgrade.")
     current: str = Field(description="The version now installed.")
     upgraded: bool = Field(description="False when it was already the latest.")
-    changelog: str | None = Field(None, description="What changed; set after an upgrade.")
+    changelog: str | None = Field(None, description="Link to the changelog; set after an upgrade.")

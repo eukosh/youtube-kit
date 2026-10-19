@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
@@ -116,7 +117,7 @@ def test_unknown_installs_get_a_pip_command_to_run_themselves(monkeypatch, tmp_p
     assert command in install.command
 
 
-def test_windows_tool_installs_upgrade_from_another_terminal(monkeypatch, tool_env):
+def test_windows_tool_installs_upgrade_after_ytk_exits(monkeypatch, tool_env):
     monkeypatch.setattr(updates, "_editable_source", lambda: None)
     monkeypatch.setattr(sys, "prefix", str(tool_env))
     monkeypatch.setattr(updates.os, "name", "nt")
@@ -354,7 +355,7 @@ def test_pip_installs_get_the_command_instead(check_on, monkeypatch, tool_env):
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: object())
     calls = fake_run(monkeypatch)
 
-    with pytest.raises(YouTubeError, match="can't upgrade this install itself") as raised:
+    with pytest.raises(YouTubeError, match="can't upgrade this copy itself") as raised:
         updates.upgrade()
 
     assert "pip install --upgrade youtube-kit" in raised.value.details["command"]
@@ -402,16 +403,30 @@ def test_people_get_a_reminder_after_the_output(check_on, capsys, api, monkeypat
 
     assert main(["video", "categories"]) == 0
 
-    assert "ytk 0.6.0 → 0.7.0. Run `ytk upgrade`." in capsys.readouterr().err
+    err = re.sub(r"\x1b\[[0-9;]*m", "", capsys.readouterr().err)  # drop colors
+    assert "Update available: ytk 0.6.0 → 0.7.0. Run `ytk upgrade`." in err
+    assert f"Changelog: {updates.CHANGELOG_URL}" in err
 
 
-def test_people_get_no_reminder_after_a_failure(check_on, capsys, monkeypatch):
+def test_people_get_a_hint_instead_of_the_reminder_after_a_usage_error(check_on, capsys, monkeypatch):
     remember("0.7.0")
     monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
 
     assert main(["video", "frobnicate"]) == 2
 
-    assert "Update available" not in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "Update available" not in err
+    assert "ytk 0.7.0 is out and may have this command. Run `ytk upgrade`." in err
+
+
+def test_failed_commands_still_start_the_check(check_on, capsys, monkeypatch):
+    spawned = []
+    monkeypatch.setattr(subprocess, "Popen", lambda argv, **kwargs: spawned.append(argv) or FakeChild())
+    monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+
+    assert main(["video", "frobnicate"]) == 2
+
+    assert len(spawned) == 1
 
 
 def test_upgrade_command_prints_the_result(check_on, capsys, monkeypatch):
@@ -438,4 +453,5 @@ def test_mcp_tells_the_model(check_on, monkeypatch):
 
     monkeypatch.setattr(mcp_server.mcp, "instructions", mcp_server.INSTRUCTIONS)
     mcp_server.run()
-    assert mcp_server.mcp.instructions == mcp_server.INSTRUCTIONS  # once a day, shared with the CLI
+    assert mcp_server.mcp.instructions == mcp_server.INSTRUCTIONS  # once a day
+    assert updates.notice(settings()) is not None  # the terminal's reminder is separate

@@ -68,7 +68,7 @@ def install() -> Install | None:
 
 
 def _replaces_itself(kind: Literal["uv_tool", "pipx"], argv: list[str]) -> Install:
-    # Windows locks the running ytk's own files, so there the user runs it from another terminal.
+    # Windows locks the running ytk's files, so the user runs the upgrade after ytk exits.
     if os.name == "nt":
         return Install(kind, None, shlex.join(argv))
     return Install(kind, argv, "ytk upgrade")
@@ -98,16 +98,20 @@ def pending(settings: Settings) -> Update | None:
     return Update(current=current, latest=latest, command=target.command, changelog=CHANGELOG_URL)
 
 
-def notice(settings: Settings) -> Update | None:
-    """`pending`, at most once a day for each version, for reminders nobody asked for."""
+def notice(settings: Settings, *, stamp: str = "noticed") -> Update | None:
+    """`pending`, at most once a day for each version, for reminders nobody asked for.
+
+    `stamp` names where that is recorded. The MCP server keeps its own: some clients never show
+    a server's instructions, and a reminder there shouldn't silence the terminal's.
+    """
     update = pending(settings)
     if update is None:
         return None
     state = _load()
-    last = state.get("noticed")
+    last = state.get(stamp)
     if isinstance(last, dict) and last.get("version") == update.latest and not _older_than(last.get("at"), CHECK_EVERY):
         return None
-    state["noticed"] = {"version": update.latest, "at": _now()}
+    state[stamp] = {"version": update.latest, "at": _now()}
     # Without a writable cache every run would repeat it.
     return update if _save(state) else None
 
@@ -171,8 +175,8 @@ def upgrade() -> UpgradeResult:
         return UpgradeResult(previous=current, current=current, upgraded=False)
     if target.argv is None:
         raise YouTubeError(
-            f"ytk can't upgrade this install itself. Run `{target.command}`, or the equivalent for how you "
-            "installed it.",
+            f"ytk can't upgrade this copy itself. Run `{target.command}`; if you installed it another way, "
+            "use that tool's upgrade command.",
             details={"command": target.command},
         )
     command = shlex.join(target.argv)
