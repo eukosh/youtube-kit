@@ -135,7 +135,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 - **Quota costs up front.** Each command's `--help` and each MCP tool description states what it spends.
 - **One core.** The CLI and the MCP server are thin layers over the same code, and a test fails if either misses an operation.
 - **Guarded deletes.** See below.
-- **Update notices.** Once a day `ytk` asks PyPI in the background whether a newer release is out. At a terminal it tells you after the command's output. Agents get an `{"update": ...}` line on stderr. The MCP server tells the model when it starts, so it hears about a release on the next restart. `ytk upgrade` installs it the way you installed `ytk` (uv tool, uvx or pipx). To turn the check off, put `check = false` under `[updates]` in `config.toml` or set `YTK_NO_UPDATE_CHECK=1`. It's also off when `CI` or `NO_UPDATE_NOTIFIER` is set.
+- **Update notices.** `ytk` checks PyPI once a day in the background and tells you when a newer release is out: after the output at a terminal, as an `{"update": ...}` stderr line for agents, and in the MCP server's instructions at startup. `ytk upgrade` installs it. Turn the check off with `check = false` under `[updates]` in `config.toml` or `YTK_NO_UPDATE_CHECK=1`; it's also off when `CI` or `NO_UPDATE_NOTIFIER` is set.
 
 ## Deleting
 

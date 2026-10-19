@@ -1,7 +1,6 @@
 """Whether a newer youtube-kit is on PyPI, and upgrading to it.
 
-Notices read only the cached result of the last check, so no command waits on PyPI.
-`refresh_in_background` keeps that cache at most a day old.
+Notices read only the cache, which `refresh_in_background` renews daily, so no command waits on PyPI.
 """
 
 import contextlib
@@ -38,17 +37,17 @@ _REINSTALL = {"uv_tool": f"uv tool install {APP_NAME}@latest", "pipx": f"pipx in
 
 @dataclass(frozen=True)
 class Install:
-    """How this copy was installed, which decides how it upgrades."""
+    """How this copy was installed, and so how it upgrades."""
 
     kind: Literal["uv_tool", "pipx", "uvx", "pip"]
     argv: list[str] | None
-    """What `upgrade` runs; None when the user has to upgrade it themselves."""
+    """What `upgrade` runs; None when the user must run `command` themselves."""
     command: str
     """What to tell the user to run."""
 
 
 def install() -> Install | None:
-    """None for an editable install: a development checkout, updated through git rather than PyPI."""
+    """None for an editable (development) install, which updates through git."""
     if _editable_source():
         return None
     prefix = os.path.realpath(sys.prefix)
@@ -56,7 +55,7 @@ def install() -> Install | None:
         return _replaces_itself("uv_tool", ["uv", "tool", "upgrade", APP_NAME])
     if os.path.isfile(os.path.join(prefix, "pipx_metadata.json")):
         return _replaces_itself("pipx", ["pipx", "upgrade", APP_NAME])
-    # uvx runs from a cached environment (archive-v0 in uv 0.9) and keeps using it until `@latest` refreshes it.
+    # uvx's cached environment (archive-v0 in uv 0.9), kept until `@latest` refreshes it.
     if os.path.basename(os.path.dirname(prefix)).startswith("archive-"):
         refresh = ["uvx", f"{APP_NAME}@latest", "--version"]
         return Install("uvx", refresh, shlex.join(refresh))
@@ -68,15 +67,14 @@ def install() -> Install | None:
 
 
 def _replaces_itself(kind: Literal["uv_tool", "pipx"], argv: list[str]) -> Install:
-    # Windows locks the running ytk's files, so the user runs the upgrade after ytk exits.
+    # Windows locks the running ytk's files.
     if os.name == "nt":
         return Install(kind, None, shlex.join(argv))
     return Install(kind, argv, "ytk upgrade")
 
 
 def enabled(settings: Settings) -> bool:
-    """Off with YTK_NO_UPDATE_CHECK, NO_UPDATE_NOTIFIER or CI set, with `check = false` under [updates]
-    in config.toml, and for editable installs."""
+    """Off with YTK_NO_UPDATE_CHECK, NO_UPDATE_NOTIFIER or CI, `[updates] check = false`, or an editable install."""
     if any(os.environ.get(name) for name in _OPT_OUT_ENVS) or install() is None:
         return False
     try:
@@ -99,10 +97,9 @@ def pending(settings: Settings) -> Update | None:
 
 
 def notice(settings: Settings, *, stamp: str = "noticed") -> Update | None:
-    """`pending`, at most once a day for each version, for reminders nobody asked for.
+    """`pending`, at most once a day per version and `stamp`.
 
-    `stamp` names where that is recorded. Agents and the MCP server keep their own, so a reminder
-    a person never sees (an agent run, a client that hides instructions) doesn't silence theirs.
+    Agents and the MCP server use their own stamps, so reminders a person never sees don't use up theirs.
     """
     update = pending(settings)
     if update is None:
@@ -112,29 +109,27 @@ def notice(settings: Settings, *, stamp: str = "noticed") -> Update | None:
     if isinstance(last, dict) and last.get("version") == update.latest and not _older_than(last.get("at"), CHECK_EVERY):
         return None
     state[stamp] = {"version": update.latest, "at": _now()}
-    # Without a writable cache every run would repeat it.
+    # Unsaved, it would repeat on every run.
     return update if _save(state) else None
 
 
 def refresh_in_background(settings: Settings) -> None:
-    """Ask PyPI for the latest release when the last check is over a day old.
+    """Ask PyPI, from a detached process, when the last check is over a day old.
 
-    The check runs in a detached process: most commands finish before PyPI answers, and a thread
-    would die with them.
+    Not a thread: most commands exit before PyPI answers.
     """
     state = _load()
     due = _older_than(state.get("checked_at"), CHECK_EVERY) and _older_than(state.get("claimed_at"), _RETRY_AFTER)
     if not (due and enabled(settings)):
         return
-    # The claim keeps commands started meanwhile (say, from xargs) from each asking PyPI, and spaces out
-    # retries after a failed check. Without a writable cache there is no claim, so no check either.
+    # The claim stops parallel commands each asking PyPI and spaces out retries. No writable cache, no check.
     state["claimed_at"] = _now()
     if not _save(state):
         return
     detach = {"creationflags": subprocess.DETACHED_PROCESS} if os.name == "nt" else {"start_new_session": True}
     try:
         child = subprocess.Popen(
-            # -P keeps the working directory off sys.path; -I would also hide `pip install --user` packages.
+            # -P keeps cwd off sys.path; -I would also hide user site-packages.
             [sys.executable, "-P", "-m", __name__],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
@@ -143,12 +138,12 @@ def refresh_in_background(settings: Settings) -> None:
         )
     except OSError:
         return
-    # Reaps the child in long-lived processes like the MCP server; a short command just exits first.
+    # Reaps the child in long-lived processes such as the MCP server.
     threading.Thread(target=child.wait, daemon=True).start()
 
 
 def latest_release() -> str:
-    """The newest release on PyPI, also recorded for the notices."""
+    """The newest release on PyPI, also cached for the notices."""
     try:
         response, body = httplib2.Http(timeout=_TIMEOUT_SECONDS).request(
             PYPI_URL, headers={"User-Agent": f"{APP_NAME}/{version(APP_NAME)}"}
@@ -176,8 +171,7 @@ def upgrade() -> UpgradeResult:
         return UpgradeResult(previous=current, current=current, upgraded=False)
     if target.argv is None:
         raise YouTubeError(
-            f"ytk can't upgrade this copy itself. Run `{target.command}`; if you installed it another way, "
-            "use that tool's upgrade command.",
+            f"ytk can't upgrade itself here. Run `{target.command}`, or your installer's upgrade command.",
             details={"command": target.command},
         )
     command = shlex.join(target.argv)
@@ -188,22 +182,22 @@ def upgrade() -> UpgradeResult:
     if done.returncode != 0:
         output = (done.stderr or done.stdout).strip()
         raise YouTubeError(f"`{command}` failed: {output}", details={"command": command})
-    now = _version_after(target, done.stdout) or latest  # the command succeeded, so trust it if the probe fails
+    now = _version_after(target, done.stdout) or latest  # the command succeeded; trust it
     if now == current:
         reinstall = _REINSTALL.get(target.kind, target.command)
         raise YouTubeError(
-            f"`{command}` left youtube-kit at {current} though {latest} is out, usually because it was installed "
-            f"with a version pin. Run `{reinstall}` to move to the latest.",
+            f"`{command}` kept youtube-kit at {current} ({latest} is out), likely due to a version pin. "
+            f"Run `{reinstall}`.",
             details={"command": reinstall},
         )
     return UpgradeResult(previous=current, current=now, upgraded=True, changelog=CHANGELOG_URL)
 
 
 def _version_after(target: Install, stdout: str) -> str | None:
-    if target.kind == "uvx":  # the refreshed environment prints its own --version
+    if target.kind == "uvx":  # the refreshed environment printed its --version
         lines = stdout.strip().splitlines()
         return lines[-1].strip() if lines else None
-    # This process still has the old version loaded; ask a fresh interpreter in the same environment.
+    # This process has the old version loaded; ask a fresh interpreter.
     probe = [sys.executable, "-P", "-c", f"from importlib.metadata import version; print(version({APP_NAME!r}))"]
     try:
         done = subprocess.run(probe, capture_output=True, text=True, timeout=60, check=True)
@@ -213,7 +207,7 @@ def _version_after(target: Install, stdout: str) -> str | None:
 
 
 def _newer(latest: str, current: str) -> bool:
-    """Plain X.Y.Z releases only; anything else (pre-releases, local builds) never counts as newer."""
+    """Plain X.Y.Z only; pre-releases and local builds never count as newer."""
     try:
         return _release(latest) > _release(current)
     except ValueError:
@@ -248,7 +242,7 @@ def _load() -> dict:
 
 
 def _save(state: dict) -> bool:
-    """Write through a temporary file, so concurrent runs never read half a file. False if it couldn't."""
+    """Atomic, so concurrent runs never read half a file. False on failure."""
     temporary = STATE_FILE.with_name(f"{STATE_FILE.name}.{os.getpid()}")
     try:
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)

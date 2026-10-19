@@ -12,9 +12,9 @@ Contract (relied on by agents and scripts, documented in skills/youtube/SKILL.md
 - When stdout is a terminal, the JSON is indented and colored.
 - Guarded deletes ask a human at a terminal instead of exiting 8; declining exits 1.
   For agents, the exit-8 details include `rerun`, the exact command that confirms.
-- When a newer release is known, at most once a day per version an {"update": {...}} line goes
-  to stderr before anything else; at a terminal it's a reminder after the output instead. A
-  usage error carries the same object as `details.update`, since the command may be newer.
+- When a newer release is out, stderr starts with an {"update": {...}} line, at most once a day
+  per version (at a terminal, a reminder after the output), and usage errors carry it in
+  `details.update`.
 """
 
 import contextlib
@@ -53,8 +53,7 @@ channel = app.command(cyclopts.App(name="channel", help="Look up channels, and b
 watermark = channel.command(cyclopts.App(name="watermark", help="The subscribe watermark shown over your videos."))
 section = channel.command(cyclopts.App(name="section", help="Sections on a channel's home page."))
 subscription = app.command(cyclopts.App(name="subscription", help="Your subscriptions to other channels."))
-# Commands about ytk itself rather than YouTube content, listed apart in `ytk --help`.
-SETUP = "Setup"
+SETUP = "Setup"  # commands about ytk itself, grouped apart in --help
 auth_app = app.command(cyclopts.App(name="auth", help="Log in to your YouTube channels.", group=SETUP))
 
 _NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
@@ -186,9 +185,8 @@ def auth_logout(channel: str | None = None, /) -> AuthStatus:
 def upgrade() -> UpgradeResult:
     """Upgrade ytk to the latest release, the way it was installed (uv tool, uvx or pipx).
 
-    Already the latest: reports that and changes nothing. Where ytk can't replace itself (pip
-    installs; uv tool and pipx on Windows) it prints the command to run and exits 1 with it in
-    `details.command`. Restart your MCP client afterwards so it runs the new version.
+    Does nothing if already the latest. Where it can't (pip; uv tool or pipx on Windows), exits 1
+    with the command to run in `details.command`. Restart MCP clients afterwards.
     """
     if not sys.stderr.isatty():
         return updates.upgrade()
@@ -207,16 +205,16 @@ def serve_mcp() -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     human = sys.stderr.isatty()
-    # MCP owns stdio and checks for itself; the upgrade command asks PyPI directly.
+    # mcp owns stdio; upgrade reports versions itself.
     remind = argv[:1] not in (["mcp"], ["upgrade"])
     settings = Settings.from_env()
     if remind:
         updates.refresh_in_background(settings)
-    # Agents get their own stamp, so a day of agent runs doesn't silence the person's reminder.
+    # Own stamp, so agent runs don't use up the person's daily reminder.
     if remind and not human and (update := updates.notice(settings, stamp="noticed_agent")):
         print(json.dumps({"update": update.model_dump()}, ensure_ascii=False), file=sys.stderr)
     code = _run(argv)
-    # A person hears about it after the output, and not after an error, which should be the last thing said.
+    # After the output, never after an error.
     if remind and human and code == 0 and (update := updates.notice(settings)):
         Console(stderr=True, highlight=False).print(
             f"[yellow]Update available:[/] ytk {update.current} → {update.latest}. Run `{escape(update.command)}`."

@@ -278,14 +278,14 @@ class ChannelSection(BaseModel):
 
 
 class Update(BaseModel):
-    current: str = Field(description="The installed version.")
-    latest: str = Field(description="The newest release on PyPI.")
-    command: str = Field(description="What upgrades this install.")
-    changelog: str = Field(description="Link to the changelog.")
+    current: str = Field(description="Installed version.")
+    latest: str = Field(description="Newest release on PyPI.")
+    command: str = Field(description="Upgrades this install.")
+    changelog: str = Field(description="Changelog link.")
 
 
 class UpgradeResult(BaseModel):
-    previous: str = Field(description="The version before the upgrade.")
-    current: str = Field(description="The version now installed.")
-    upgraded: bool = Field(description="False when it was already the latest.")
-    changelog: str | None = Field(None, description="Link to the changelog; set after an upgrade.")
+    previous: str = Field(description="Version before.")
+    current: str = Field(description="Version now installed.")
+    upgraded: bool = Field(description="False if it was already the latest.")
+    changelog: str | None = Field(None, description="Changelog link, after an upgrade.")

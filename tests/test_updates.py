@@ -335,7 +335,7 @@ def test_uvx_upgrade_refreshes_the_cache_and_reads_the_new_version(check_on, mon
 def test_upgrade_that_did_not_move_says_how_to_unpin(check_on, monkeypatch):
     fake_run(monkeypatch, after="0.6.0")
 
-    with pytest.raises(YouTubeError, match=r"left youtube-kit at 0\.6\.0 though 0\.7\.0 is out") as raised:
+    with pytest.raises(YouTubeError, match=r"kept youtube-kit at 0\.6\.0 \(0\.7\.0 is out\)") as raised:
         updates.upgrade()
 
     assert raised.value.details == {"command": "uv tool install youtube-kit@latest"}
@@ -355,7 +355,7 @@ def test_pip_installs_get_the_command_instead(check_on, monkeypatch, tool_env):
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: object())
     calls = fake_run(monkeypatch)
 
-    with pytest.raises(YouTubeError, match="can't upgrade this copy itself") as raised:
+    with pytest.raises(YouTubeError, match="can't upgrade itself here") as raised:
         updates.upgrade()
 
     assert "pip install --upgrade youtube-kit" in raised.value.details["command"]
@@ -460,7 +460,7 @@ def test_mcp_tells_the_model(check_on, monkeypatch):
     mcp_server.run()
 
     assert mcp_server.mcp.instructions.startswith(mcp_server.INSTRUCTIONS)
-    assert "youtube-kit 0.7.0 is out; this server runs 0.6.0" in mcp_server.mcp.instructions
+    assert "youtube-kit 0.7.0 is out (this server runs 0.6.0)" in mcp_server.mcp.instructions
     assert "`ytk upgrade`" in mcp_server.mcp.instructions
 
     monkeypatch.setattr(mcp_server.mcp, "instructions", mcp_server.INSTRUCTIONS)
