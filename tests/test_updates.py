@@ -235,7 +235,7 @@ def test_refresh_starts_one_detached_check_a_day(check_on, monkeypatch):
     remember("0.6.0", checked=timedelta(days=2))
     updates.refresh_in_background(settings())
     updates.refresh_in_background(settings())  # the first one claimed the check
-    assert spawned == [[sys.executable, "-I", "-m", "youtube_kit.core.updates"]]
+    assert spawned == [[sys.executable, "-P", "-m", "youtube_kit.core.updates"]]
 
 
 def test_failed_check_is_retried_an_hour_later(check_on, monkeypatch):
@@ -385,9 +385,21 @@ def test_agents_get_one_json_line_before_the_output(check_on, capsys, api):
     ]
 
 
+def test_an_agents_notice_does_not_silence_the_persons(check_on, capsys, api, monkeypatch):
+    remember("0.7.0")
+    api.public.videoCategories().list().execute.return_value = {"items": []}
+
+    assert main(["video", "categories"]) == 0
+    assert '"update"' in capsys.readouterr().err
+
+    monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+    assert main(["video", "categories"]) == 0
+    assert "Update available" in capsys.readouterr().err
+
+
 def test_usage_errors_say_an_update_is_out(check_on, capsys):
     remember("0.7.0")
-    updates.notice(settings())  # today's notice was already shown
+    updates.notice(settings(), stamp="noticed_agent")  # today's notice was already shown
 
     assert main(["video", "frobnicate"]) == 2
 

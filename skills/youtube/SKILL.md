@@ -48,7 +48,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 - stdout: exactly one JSON document, null fields omitted.
 - Listings are `{"items": [...], "next_page_token": "..."}`. `--limit N` fetches across pages for you; pass `--page-token` to continue past it.
 - Progress: `video upload` and `video status --wait` print `{"progress": {"done", "total", "percent"}}` lines to stderr as they go, about every 10% (`--wait` only when YouTube reports how far processing is).
-- Updates: when ytk knows of a newer release, stderr starts with one `{"update": {"current", "latest", "command", "changelog"}}` line, at most once a day per version. A `usage` error carries the same object in `details.update`, because the command you ran may only exist in the newer version. Tell the user when you finish the task, and run `command` when they ask. For most installs that is `ytk upgrade`, which prints `{"previous", "current", "upgraded", "changelog"?}` (`"upgraded": false` when already current) and exits 1 with `details.command` when the user has to run the upgrade themselves.
+- Updates: when a newer release is known, stderr starts with one `{"update": {"current", "latest", "command", "changelog"}}` line, at most once a day per version, and a `usage` error carries the same object in `details.update`: the command you ran may only exist in the newer release. Finish the task, then tell the user; run `command` when they ask. It exits 1 with `details.command` when the user has to run the upgrade themselves.
 - Failure: stdout is empty, the last stderr line is `{"error": {"type", "message", "details"?}}`, and the exit code names the type:
 
 | exit | type | what to do |

@@ -186,13 +186,13 @@ def auth_logout(channel: str | None = None, /) -> AuthStatus:
 def upgrade() -> UpgradeResult:
     """Upgrade ytk to the latest release, the way it was installed (uv tool, uvx or pipx).
 
-    Already the latest: reports that and changes nothing. pip installs, and uv tool or pipx
-    installs on Windows, get the command to run yourself instead (exit 1, `details.command`).
-    Restart your MCP client afterwards so it runs the new version.
+    Already the latest: reports that and changes nothing. Where ytk can't replace itself (pip
+    installs; uv tool and pipx on Windows) it prints the command to run and exits 1 with it in
+    `details.command`. Restart your MCP client afterwards so it runs the new version.
     """
     if not sys.stderr.isatty():
         return updates.upgrade()
-    with Console(stderr=True).status("Upgrading ytk…"):
+    with Console(stderr=True).status("Looking for a newer ytk…"):
         return updates.upgrade()
 
 
@@ -212,7 +212,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     settings = Settings.from_env()
     if remind:
         updates.refresh_in_background(settings)
-    if remind and not human and (update := updates.notice(settings)):
+    # Agents get their own stamp, so a day of agent runs doesn't silence the person's reminder.
+    if remind and not human and (update := updates.notice(settings, stamp="noticed_agent")):
         print(json.dumps({"update": update.model_dump()}, ensure_ascii=False), file=sys.stderr)
     code = _run(argv)
     # A person hears about it after the output, and not after an error, which should be the last thing said.

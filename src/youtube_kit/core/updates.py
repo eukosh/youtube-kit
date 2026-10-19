@@ -101,8 +101,8 @@ def pending(settings: Settings) -> Update | None:
 def notice(settings: Settings, *, stamp: str = "noticed") -> Update | None:
     """`pending`, at most once a day for each version, for reminders nobody asked for.
 
-    `stamp` names where that is recorded. The MCP server keeps its own: some clients never show
-    a server's instructions, and a reminder there shouldn't silence the terminal's.
+    `stamp` names where that is recorded. Agents and the MCP server keep their own, so a reminder
+    a person never sees (an agent run, a client that hides instructions) doesn't silence theirs.
     """
     update = pending(settings)
     if update is None:
@@ -134,7 +134,8 @@ def refresh_in_background(settings: Settings) -> None:
     detach = {"creationflags": subprocess.DETACHED_PROCESS} if os.name == "nt" else {"start_new_session": True}
     try:
         child = subprocess.Popen(
-            [sys.executable, "-I", "-m", __name__],
+            # -P keeps the working directory off sys.path; -I would also hide `pip install --user` packages.
+            [sys.executable, "-P", "-m", __name__],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -155,7 +156,7 @@ def latest_release() -> str:
     except NETWORK_ERRORS as e:
         raise NetworkError(f"Could not reach PyPI ({type(e).__name__}: {e}). Retry later.") from e
     if response.status != 200:
-        raise YouTubeError(f"PyPI answered HTTP {response.status} for {PYPI_URL}.")
+        raise NetworkError(f"PyPI answered HTTP {response.status} for {PYPI_URL}. Retry later.")
     try:
         latest = json.loads(body)["info"]["version"]
     except (ValueError, KeyError, TypeError) as e:
@@ -203,7 +204,7 @@ def _version_after(target: Install, stdout: str) -> str | None:
         lines = stdout.strip().splitlines()
         return lines[-1].strip() if lines else None
     # This process still has the old version loaded; ask a fresh interpreter in the same environment.
-    probe = [sys.executable, "-I", "-c", f"from importlib.metadata import version; print(version({APP_NAME!r}))"]
+    probe = [sys.executable, "-P", "-c", f"from importlib.metadata import version; print(version({APP_NAME!r}))"]
     try:
         done = subprocess.run(probe, capture_output=True, text=True, timeout=60, check=True)
     except (OSError, subprocess.SubprocessError):

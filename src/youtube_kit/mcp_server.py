@@ -97,7 +97,7 @@ def run() -> None:
 def instructions_with(update: Update) -> str:
     """The server has no terminal to print a reminder on, so the model passes it on."""
     return (
-        f"{INSTRUCTIONS}- youtube-kit {update.latest} is out; this server runs {update.current}. Tell the user once:"
-        f" run `{update.command}` in a terminal, then restart the MCP client so it starts the new version."
+        f"{INSTRUCTIONS}- youtube-kit {update.latest} is out; this server runs {update.current}. Once, after the"
+        f" user's first request is done, tell them: run `{update.command}` in a terminal, then restart the MCP client so it starts the new version."
         f" Changelog: {update.changelog}\n"
     )
