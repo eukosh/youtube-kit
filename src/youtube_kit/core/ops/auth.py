@@ -29,8 +29,15 @@ CLIENT_STEPS = [
                 do="YouTube Analytics API: click Enable.",
                 url="https://console.cloud.google.com/apis/library/youtubeanalytics.googleapis.com",
             ),
+            SetupTask(
+                do="YouTube Reporting API, for thumbnail impressions and click-through rate: click Enable.",
+                url="https://console.cloud.google.com/apis/library/youtubereporting.googleapis.com",
+            ),
         ],
-        gcloud="gcloud services enable youtube.googleapis.com youtubeanalytics.googleapis.com --project=PROJECT_ID",
+        gcloud=(
+            "gcloud services enable youtube.googleapis.com youtubeanalytics.googleapis.com "
+            "youtubereporting.googleapis.com --project=PROJECT_ID"
+        ),
     ),
     SetupStep(
         title="Set up the consent screen",

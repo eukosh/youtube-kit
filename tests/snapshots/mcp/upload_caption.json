@@ -1,0 +1,125 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": true,
+    "read_only_hint": false,
+    "title": null
+  },
+  "description": "Add a caption track to one of your videos from a caption file, such as SRT or VTT.\n\nQuota: 400 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "draft": {
+        "default": false,
+        "description": "Upload it hidden from viewers.",
+        "type": "boolean"
+      },
+      "file": {
+        "description": "Path to the caption file, at most 100 MB.",
+        "format": "path",
+        "type": "string"
+      },
+      "language": {
+        "description": "Language of the captions, e.g. en or en-US.",
+        "type": "string"
+      },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+      },
+      "name": {
+        "default": "",
+        "description": "Track name viewers see next to the language. Two tracks in one language need different names.",
+        "type": "string"
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video",
+      "file",
+      "language"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "draft": {
+        "default": false,
+        "description": "Not shown to viewers yet.",
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "description": "asr: made by YouTube's speech recognition. forced: shown when no track is chosen.",
+        "enum": [
+          "standard",
+          "asr",
+          "forced"
+        ],
+        "type": "string"
+      },
+      "language": {
+        "type": "string"
+      },
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "status": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "serving, syncing, or failed."
+      },
+      "updated_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "video_id",
+      "language",
+      "kind"
+    ],
+    "type": "object"
+  }
+}

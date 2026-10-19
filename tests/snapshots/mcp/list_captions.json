@@ -1,0 +1,116 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "A video's caption tracks: language, name, and whether YouTube generated them from the audio.\n\nWorks on any public video, though only the owner can download a transcript.\n\nQuota: 50 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "result": {
+        "items": {
+          "properties": {
+            "draft": {
+              "default": false,
+              "description": "Not shown to viewers yet.",
+              "type": "boolean"
+            },
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "description": "asr: made by YouTube's speech recognition. forced: shown when no track is chosen.",
+              "enum": [
+                "standard",
+                "asr",
+                "forced"
+              ],
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "serving, syncing, or failed."
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "video_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "video_id",
+            "language",
+            "kind"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "result"
+    ],
+    "type": "object",
+    "x-fastmcp-wrap-result": true
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": true,
+    "read_only_hint": true,
+    "title": null
+  },
+  "description": "What is said in one of your videos, from its captions, including the ones YouTube generates.\n\nYouTube lets only a video's owner download its captions. Of several tracks in a language, a published one\nyou wrote is preferred over YouTube's.\n\nQuota: 252 units.",
+  "input_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "format": {
+        "default": "text",
+        "description": "text: paragraphs of about 30 seconds, each starting with its [m:ss] time. srt or vtt: the\ncaption file itself.",
+        "enum": [
+          "text",
+          "srt",
+          "vtt"
+        ],
+        "type": "string"
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Caption language, e.g. en or en-US. Omit for the language spoken in the video."
+      },
+      "my_channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Which of your logged-in channels to work on: UC… ID, @handle or exact title. Omit for the default channel."
+      },
+      "translate_to": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Machine-translate the captions into this language, e.g. de."
+      },
+      "video": {
+        "description": "Video ID or URL.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "video"
+    ],
+    "type": "object"
+  },
+  "output_schema": {
+    "properties": {
+      "caption_id": {
+        "type": "string"
+      },
+      "format": {
+        "enum": [
+          "text",
+          "srt",
+          "vtt"
+        ],
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "standard",
+          "asr",
+          "forced"
+        ],
+        "type": "string"
+      },
+      "language": {
+        "type": "string"
+      },
+      "text": {
+        "type": "string"
+      },
+      "translated_to": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Language YouTube machine-translated the track into."
+      },
+      "video_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "video_id",
+      "caption_id",
+      "language",
+      "kind",
+      "format",
+      "text"
+    ],
+    "type": "object"
+  }
+}

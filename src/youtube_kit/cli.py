@@ -35,12 +35,12 @@ from . import core, guide
 from .core import auth, progress, updates
 from .core.config import Settings
 from .core.models import AuthStatus, UpgradeResult
-from .core.ops import analytics, branding, channels, comments, playlists, search, subscriptions, videos
+from .core.ops import analytics, branding, captions, channels, comments, playlists, search, subscriptions, videos
 from .core.ops import auth as auth_ops
 
 app = cyclopts.App(
     name="ytk",
-    help="YouTube Data and Analytics APIs from the command line. Prints JSON; see `ytk <command> --help`.",
+    help="YouTube Data, Analytics and Reporting APIs from the command line. Prints JSON; see `ytk <command> --help`.",
     version=version("youtube-kit"),
     # No --no-X / --empty-X flags, except on update commands where "unset" and "clear" mean something.
     default_parameter=cyclopts.Parameter(negative_bool=(), negative_iterable=()),
@@ -49,6 +49,7 @@ app = cyclopts.App(
 video = app.command(cyclopts.App(name="video", help="Look up, upload, edit, and delete videos."))
 playlist = app.command(cyclopts.App(name="playlist", help="Look up and manage playlists."))
 comment = app.command(cyclopts.App(name="comment", help="Read, write, and moderate comments."))
+caption = app.command(cyclopts.App(name="caption", help="Transcripts of your videos, and their caption tracks."))
 channel = app.command(cyclopts.App(name="channel", help="Look up channels, and brand your own."))
 watermark = channel.command(cyclopts.App(name="watermark", help="The subscribe watermark shown over your videos."))
 section = channel.command(cyclopts.App(name="section", help="Sections on a channel's home page."))
@@ -60,6 +61,7 @@ _NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
 
 app.command(search.search, name="search")
 app.command(analytics.get_analytics, name="analytics")
+app.command(analytics.get_impressions, name="impressions")
 
 video.command(videos.get_videos, name="get")
 video.command(videos.list_video_categories, name="categories")
@@ -91,6 +93,12 @@ comment.command(comments.delete_comment, name="delete")
 comment.command(comments.approve_comments, name="approve")
 comment.command(comments.hold_comments, name="hold")
 comment.command(comments.reject_comments, name="reject")
+
+caption.command(captions.list_captions, name="list")
+caption.command(captions.get_transcript, name="transcript")
+caption.command(captions.upload_caption, name="upload")
+caption.command(captions.update_caption, name="update", default_parameter=_NEGATIVES)
+caption.command(captions.delete_caption, name="delete")
 
 channel.command(channels.get_channel, name="get")
 channel.command(channels.list_my_channels, name="mine")

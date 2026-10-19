@@ -10,13 +10,13 @@ High-stakes CLIs layer several defences. Heroku's `--confirm <app>`, GitHub's "t
 
 ## Decision
 
-Irreversible deletes (video, playlist, comment) are guarded in core, so both adapters inherit the same rules:
+Irreversible deletes (video, playlist, comment, caption track) are guarded in core, so both adapters inherit the same rules:
 
 1. **Confirmation bound to the target.** A guarded op takes `confirm`. Without it, core raises `ConfirmationRequired` (exit 8) carrying the plan and the exact value to pass back. A wrong value is invalid input. The CLI asks a human at a terminal (`[y/N]`) and reruns with `--confirm <id>`; an agent gets exit 8 with `details.rerun`. The MCP tool fails the same way, and the server instructions tell the model to get the user's approval first.
 2. **Damage limit for videos.** A video with more than 100 views, or public and uploaded more than 7 days ago, is refused (`Protected`, exit 9), and no flag overrides it. The limits live in `config.toml`. When the view count is hidden or the upload time unknown, the guard fails closed.
-3. **Ownership first.** Deleting another channel's video, playlist or comment is refused before anything is described or confirmed.
+3. **Ownership first.** Deleting another channel's video, playlist, comment or captions is refused before anything is described or confirmed.
 4. **Idempotent.** A target that is already gone, before or during the call, is a success with `already_gone: true`.
-5. **Harness sign-off.** The skill ships Claude Code `ask` rules for the three delete commands, and MCP delete tools carry `destructiveHint`.
+5. **Harness sign-off.** The README gives Claude Code `ask` rules for the guarded delete commands, and MCP delete tools carry `destructiveHint`.
 
 Reversible or cheap-to-redo changes stay unguarded: removing a playlist item, unsubscribing, clearing a rating, removing a watermark or a home-page section, and moderating comments.
 
@@ -30,4 +30,5 @@ Reversible or cheap-to-redo changes stay unguarded: removing a playlist item, un
 ## Consequences
 
 - A delete costs a few extra quota units for the lookup and the ownership check.
+- Caption tracks are picked by language and name, so after the confirmed track is deleted, a rerun would match another track in that language. A `confirm` naming none of the video's current tracks therefore counts as already gone, a mistyped one included: refusing it would name the other track as the value to confirm.
 - This stops mistakes, not a determined attacker: anything holding the OAuth token can call the API directly. The README says so.

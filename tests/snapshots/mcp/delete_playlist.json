@@ -59,7 +59,8 @@
           "video",
           "playlist",
           "comment",
-          "section"
+          "section",
+          "caption"
         ],
         "type": "string"
       }

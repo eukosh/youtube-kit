@@ -9,6 +9,8 @@ Privacy = Literal["private", "unlisted", "public"]
 SearchKind = Literal["video", "channel", "playlist"]
 CommentStatus = Literal["published", "held", "spam", "rejected"]
 Corner = Literal["top-left", "top-right", "bottom-left", "bottom-right"]
+CaptionKind = Literal["standard", "asr", "forced"]
+TranscriptFormat = Literal["text", "srt", "vtt"]
 
 
 class Page[T](BaseModel):
@@ -127,6 +129,29 @@ class ThumbnailResult(BaseModel):
     thumbnail_url: str | None = None
 
 
+class CaptionTrack(BaseModel):
+    id: str
+    video_id: str
+    language: str
+    name: str | None = None
+    kind: CaptionKind = Field(
+        description="asr: made by YouTube's speech recognition. forced: shown when no track is chosen."
+    )
+    draft: bool = Field(False, description="Not shown to viewers yet.")
+    status: str | None = Field(None, description="serving, syncing, or failed.")
+    updated_at: datetime | None = None
+
+
+class Transcript(BaseModel):
+    video_id: str
+    caption_id: str
+    language: str
+    kind: CaptionKind
+    translated_to: str | None = Field(None, description="Language YouTube machine-translated the track into.")
+    format: TranscriptFormat
+    text: str
+
+
 class Playlist(BaseModel):
     id: str
     url: str
@@ -160,7 +185,7 @@ class PlaylistImage(BaseModel):
 
 
 class Deleted(BaseModel):
-    kind: Literal["video", "playlist", "comment", "section"]
+    kind: Literal["video", "playlist", "comment", "section", "caption"]
     id: str
     already_gone: bool = Field(False, description="Nothing to delete: it didn't exist or was already deleted.")
 
@@ -189,6 +214,13 @@ class AnalyticsReport(BaseModel):
     until: date
     columns: list[str] = Field(description="Dimension first (if any), then the metrics, in request order.")
     rows: list[dict[str, str | int | float]]
+
+
+class ImpressionsReport(AnalyticsReport):
+    missing_days: list[date] = Field(
+        description="Days YouTube has no report for: the last two, and any outside what it keeps."
+    )
+    note: str | None = None
 
 
 class MyChannel(BaseModel):
