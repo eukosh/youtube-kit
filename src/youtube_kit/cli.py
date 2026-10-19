@@ -12,6 +12,9 @@ Contract (relied on by agents and scripts, documented in skills/youtube/SKILL.md
 - When stdout is a terminal, the JSON is indented and colored.
 - Guarded deletes ask a human at a terminal instead of exiting 8; declining exits 1.
   For agents, the exit-8 details include `rerun`, the exact command that confirms.
+- When a newer release is known, at most once a day per version an {"update": {...}} line goes
+  to stderr before anything else; at a terminal it's a reminder after the output instead. A
+  usage error carries the same object as `details.update`, since the command may be newer.
 """
 
 import contextlib
@@ -29,9 +32,9 @@ from rich.console import Console
 from rich.markup import escape
 
 from . import core, guide
-from .core import auth, progress
+from .core import auth, progress, updates
 from .core.config import Settings
-from .core.models import AuthStatus
+from .core.models import AuthStatus, Update, UpgradeResult
 from .core.ops import analytics, branding, channels, comments, playlists, search, subscriptions, videos
 from .core.ops import auth as auth_ops
 
@@ -177,6 +180,20 @@ def auth_logout(channel: str | None = None, /) -> AuthStatus:
     return auth.logout(Settings.from_env(), channel)
 
 
+@app.command(name="upgrade")
+def upgrade() -> UpgradeResult:
+    """Upgrade ytk to the latest release, the way it was installed (uv tool, uvx or pipx).
+
+    Says so and changes nothing when it is already the latest. Other installs fail with
+    the command to run yourself in `details.command`. Restart MCP clients afterwards so they
+    run the new version.
+    """
+    if not sys.stderr.isatty():
+        return updates.upgrade()
+    with Console(stderr=True).status("Upgrading ytk…"):
+        return updates.upgrade()
+
+
 @app.command(name="mcp")
 def serve_mcp() -> None:
     """Run the MCP server over stdio, exposing the same operations as tools."""
@@ -188,12 +205,32 @@ def serve_mcp() -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     human = sys.stderr.isatty()
+    # MCP owns stdio, and the upgrade command reports versions itself.
+    remind = argv[:1] not in (["mcp"], ["upgrade"])
+    if remind and not human and (update := _update_notice()):
+        print(json.dumps({"update": update.model_dump()}, ensure_ascii=False), file=sys.stderr)
+    code = _run(argv)
+    # A person hears about it after the output, and not after an error, which should be the last thing said.
+    if remind and human and code == 0 and (update := _update_notice()):
+        Console(stderr=True, highlight=False).print(
+            f"[yellow]Update available:[/] ytk {update.current} → {update.latest}. Run `{escape(update.command)}`."
+            f" [dim]Changes: {update.changelog}[/]",
+            soft_wrap=True,
+        )
+    return code
+
+
+def _run(argv: list[str]) -> int:
+    human = sys.stderr.isatty()
     try:
         with _progress():
             result = app(argv, exit_on_error=False, print_error=human, result_action="return_value")
     except CycloptsError as e:
         if not human:  # a person got cyclopts' formatted message already
-            print(json.dumps({"error": {"type": "usage", "message": str(e)}}, ensure_ascii=False), file=sys.stderr)
+            error = {"type": "usage", "message": str(e)}
+            if update := updates.pending(Settings.from_env()):
+                error["details"] = {"update": update.model_dump()}
+            print(json.dumps({"error": error}, ensure_ascii=False), file=sys.stderr)
         return 2
     except core.ConfirmationRequired as e:
         confirmed = _with_confirm(argv, e.details["confirm"])
@@ -204,7 +241,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("Cancelled; nothing was deleted.", file=sys.stderr)
             return 1
         # Rerunning fetches and checks the target again rather than trusting what was shown.
-        return main(confirmed)
+        return _run(confirmed)
     except core.YouTubeError as e:
         return _fail(e)
     except KeyboardInterrupt:
@@ -235,6 +272,13 @@ def _fail(error: core.YouTubeError) -> int:
     else:
         print(json.dumps({"error": body}, ensure_ascii=False), file=sys.stderr)
     return error.exit_code
+
+
+def _update_notice() -> Update | None:
+    """A newer release known from earlier checks; also starts the next check when one is due."""
+    settings = Settings.from_env()
+    updates.refresh_in_background(settings)
+    return updates.notice(settings)
 
 
 def _with_confirm(argv: list[str], value: str) -> list[str]:

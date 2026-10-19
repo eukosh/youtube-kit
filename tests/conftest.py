@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from youtube_kit.core import client
+from youtube_kit.core import client, updates
 
 from .fakes import CHANNEL_ID
 
@@ -16,6 +16,9 @@ def isolated_env(monkeypatch, tmp_path):
     monkeypatch.setenv("YOUTUBE_TOKEN_DIR", str(tmp_path / "tokens"))
     monkeypatch.setenv("YOUTUBE_CLIENT_SECRETS", str(tmp_path / "client_secrets.json"))
     monkeypatch.setenv("YOUTUBE_CONFIG_FILE", str(tmp_path / "config.toml"))
+    # Never ask PyPI; tests of the update check turn it back on.
+    monkeypatch.setenv(updates.OPT_OUT_ENV, "1")
+    monkeypatch.setattr(updates, "STATE_FILE", tmp_path / "cache" / "update-check.json")
 
 
 @pytest.fixture

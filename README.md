@@ -66,7 +66,7 @@ In clients configured with JSON (Claude Desktop, Cursor and others):
 
 In the ChatGPT desktop app: Settings → MCP servers → Add server → STDIO, with the command `uvx youtube-kit mcp`. Codex shares that setting (`codex mcp add youtube -- uvx youtube-kit mcp`).
 
-The server uses your `ytk auth login` logins. If you also installed `ytk` with `uv tool install`, `uvx` runs that installed version: `uv tool upgrade youtube-kit` updates both. Not set up yet? The model can walk you through it with the `setup_guide` tool.
+The server uses your `ytk auth login` logins. If you also installed `ytk` with `uv tool install`, `uvx` runs that installed version: `ytk upgrade` updates both. Restart the MCP client afterwards. Not set up yet? The model can walk you through it with the `setup_guide` tool.
 
 ## What it covers
 
@@ -123,7 +123,8 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 | `YOUTUBE_CLIENT_SECRETS` | Path to the OAuth client JSON |
 | `YOUTUBE_TOKEN_DIR` | Directory of stored logins, one file per channel |
 | `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID, @handle or exact title), overriding `ytk auth switch` |
-| `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits) |
+| `YTK_NO_UPDATE_CHECK` | Any value turns off the daily check for a newer release |
+| `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits, update check) |
 
 </details>
 
@@ -134,6 +135,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 - **Quota costs up front.** Each command's `--help` and each MCP tool description states what it spends.
 - **One core.** The CLI and the MCP server are thin layers over the same code, and a test fails if either misses an operation.
 - **Guarded deletes.** See below.
+- **Update notices.** Once a day `ytk` asks PyPI in the background whether a newer release is out. At a terminal it tells you after the command's output. Agents get an `{"update": ...}` line on stderr. The MCP server tells the model when it starts, so it hears about a release on the next restart. `ytk upgrade` installs it the way you installed `ytk` (uv tool, uvx or pipx). To turn the check off, put `check = false` under `[updates]` in `config.toml` or set `YTK_NO_UPDATE_CHECK=1`. It's also off when `CI` or `NO_UPDATE_NOTIFIER` is set.
 
 ## Deleting
 
