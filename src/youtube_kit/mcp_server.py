@@ -16,7 +16,9 @@ from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_context
 
 from . import core
-from .core import progress
+from .core import progress, updates
+from .core.config import Settings
+from .core.models import Update
 
 INSTRUCTIONS = """\
 Read and manage YouTube through the YouTube Data API v3 and YouTube Analytics.
@@ -85,4 +87,17 @@ mcp = build_server()
 
 def run() -> None:
     """Serve over stdio."""
+    settings = Settings.from_env()
+    updates.refresh_in_background(settings)
+    if update := updates.notice(settings, stamp="noticed_mcp"):
+        mcp.instructions = instructions_with(update)
     mcp.run(show_banner=False)
+
+
+def instructions_with(update: Update) -> str:
+    """No terminal here, so the model passes the reminder on."""
+    return (
+        f"{INSTRUCTIONS}- youtube-kit {update.latest} is out (this server runs {update.current}). After the user's"
+        f" first request, tell them once to run `{update.command}` in a terminal and restart the MCP client."
+        f" Changelog: {update.changelog}\n"
+    )

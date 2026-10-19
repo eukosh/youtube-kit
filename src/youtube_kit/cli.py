@@ -12,6 +12,9 @@ Contract (relied on by agents and scripts, documented in skills/youtube/SKILL.md
 - When stdout is a terminal, the JSON is indented and colored.
 - Guarded deletes ask a human at a terminal instead of exiting 8; declining exits 1.
   For agents, the exit-8 details include `rerun`, the exact command that confirms.
+- When a newer release is out, stderr starts with an {"update": {...}} line, at most once a day
+  per version (at a terminal, a reminder after the output), and usage errors carry it in
+  `details.update`.
 """
 
 import contextlib
@@ -29,9 +32,9 @@ from rich.console import Console
 from rich.markup import escape
 
 from . import core, guide
-from .core import auth, progress
+from .core import auth, progress, updates
 from .core.config import Settings
-from .core.models import AuthStatus
+from .core.models import AuthStatus, UpgradeResult
 from .core.ops import analytics, branding, channels, comments, playlists, search, subscriptions, videos
 from .core.ops import auth as auth_ops
 
@@ -50,7 +53,8 @@ channel = app.command(cyclopts.App(name="channel", help="Look up channels, and b
 watermark = channel.command(cyclopts.App(name="watermark", help="The subscribe watermark shown over your videos."))
 section = channel.command(cyclopts.App(name="section", help="Sections on a channel's home page."))
 subscription = app.command(cyclopts.App(name="subscription", help="Your subscriptions to other channels."))
-auth_app = app.command(cyclopts.App(name="auth", help="Log in to your YouTube channels."))
+SETUP = "Setup"  # commands about ytk itself, grouped apart in --help
+auth_app = app.command(cyclopts.App(name="auth", help="Log in to your YouTube channels.", group=SETUP))
 
 _NEGATIVES = cyclopts.Parameter(negative_bool=None, negative_iterable=None)
 
@@ -177,7 +181,20 @@ def auth_logout(channel: str | None = None, /) -> AuthStatus:
     return auth.logout(Settings.from_env(), channel)
 
 
-@app.command(name="mcp")
+@app.command(name="upgrade", group=SETUP)
+def upgrade() -> UpgradeResult:
+    """Upgrade ytk to the latest release, the way it was installed (uv tool, uvx or pipx).
+
+    Does nothing if already the latest. Where it can't (pip; uv tool or pipx on Windows), exits 1
+    with the command to run in `details.command`. Restart MCP clients afterwards.
+    """
+    if not sys.stderr.isatty():
+        return updates.upgrade()
+    with Console(stderr=True).status("Looking for a newer ytk…"):
+        return updates.upgrade()
+
+
+@app.command(name="mcp", group=SETUP)
 def serve_mcp() -> None:
     """Run the MCP server over stdio, exposing the same operations as tools."""
     from . import mcp_server  # deferred: FastMCP is slow to import and only needed here
@@ -188,12 +205,44 @@ def serve_mcp() -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     human = sys.stderr.isatty()
+    # mcp owns stdio; upgrade reports versions itself.
+    remind = argv[:1] not in (["mcp"], ["upgrade"])
+    settings = Settings.from_env()
+    if remind:
+        updates.refresh_in_background(settings)
+    # Own stamp, so agent runs don't use up the person's daily reminder.
+    if remind and not human and (update := updates.notice(settings, stamp="noticed_agent")):
+        print(json.dumps({"update": update.model_dump()}, ensure_ascii=False), file=sys.stderr)
+    code = _run(argv)
+    # After the output, never after an error.
+    if remind and human and code == 0 and (update := updates.notice(settings)):
+        Console(stderr=True, highlight=False).print(
+            f"[yellow]Update available:[/] ytk {update.current} → {update.latest}. Run `{escape(update.command)}`."
+            f" [dim]Changelog: {update.changelog}[/]",
+            soft_wrap=True,
+        )
+    return code
+
+
+def _run(argv: list[str]) -> int:
+    human = sys.stderr.isatty()
     try:
         with _progress():
             result = app(argv, exit_on_error=False, print_error=human, result_action="return_value")
     except CycloptsError as e:
-        if not human:  # a person got cyclopts' formatted message already
-            print(json.dumps({"error": {"type": "usage", "message": str(e)}}, ensure_ascii=False), file=sys.stderr)
+        # The command may only exist in a newer release.
+        update = updates.pending(Settings.from_env())
+        if human:  # a person got cyclopts' formatted message already
+            if update:
+                Console(stderr=True, highlight=False).print(
+                    f"[dim]ytk {update.latest} is out and may have this command. Run `{escape(update.command)}`.[/]",
+                    soft_wrap=True,
+                )
+        else:
+            error = {"type": "usage", "message": str(e)}
+            if update:
+                error["details"] = {"update": update.model_dump()}
+            print(json.dumps({"error": error}, ensure_ascii=False), file=sys.stderr)
         return 2
     except core.ConfirmationRequired as e:
         confirmed = _with_confirm(argv, e.details["confirm"])
@@ -204,7 +253,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("Cancelled; nothing was deleted.", file=sys.stderr)
             return 1
         # Rerunning fetches and checks the target again rather than trusting what was shown.
-        return main(confirmed)
+        return _run(confirmed)
     except core.YouTubeError as e:
         return _fail(e)
     except KeyboardInterrupt:

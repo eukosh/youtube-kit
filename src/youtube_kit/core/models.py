@@ -275,3 +275,17 @@ class ChannelSection(BaseModel):
     position: int | None = None
     playlist_ids: list[str] = []
     channel_ids: list[str] = []
+
+
+class Update(BaseModel):
+    current: str = Field(description="Installed version.")
+    latest: str = Field(description="Newest release on PyPI.")
+    command: str = Field(description="Upgrades this install.")
+    changelog: str = Field(description="Changelog link.")
+
+
+class UpgradeResult(BaseModel):
+    previous: str = Field(description="Version before.")
+    current: str = Field(description="Version now installed.")
+    upgraded: bool = Field(description="False if it was already the latest.")
+    changelog: str | None = Field(None, description="Changelog link, after an upgrade.")

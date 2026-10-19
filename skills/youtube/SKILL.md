@@ -36,6 +36,7 @@ ytk channel section list [CHANNEL] | add KIND | update SECTION | delete SECTION
 
 ytk subscription list              ytk subscription add CHANNEL     ytk subscription remove CHANNEL
 ytk auth status | guide | login | switch CHANNEL | logout [CHANNEL]
+ytk upgrade
 ```
 
 An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment list` means all of the user's videos. COMMENT takes a comment ID or its link (a video URL with `&lc=`).
@@ -47,6 +48,7 @@ An omitted CHANNEL means the user's own channel; an omitted VIDEO in `comment li
 - stdout: exactly one JSON document, null fields omitted.
 - Listings are `{"items": [...], "next_page_token": "..."}`. `--limit N` fetches across pages for you; pass `--page-token` to continue past it.
 - Progress: `video upload` and `video status --wait` print `{"progress": {"done", "total", "percent"}}` lines to stderr as they go, about every 10% (`--wait` only when YouTube reports how far processing is).
+- Updates: when a newer release is out, stderr starts with `{"update": {"current", "latest", "command", "changelog"}}`, at most once a day per version, and `usage` errors carry it in `details.update` (the command may be newer than this ytk). Finish the task, then tell the user; run `command` if they ask.
 - Failure: stdout is empty, the last stderr line is `{"error": {"type", "message", "details"?}}`, and the exit code names the type:
 
 | exit | type | what to do |

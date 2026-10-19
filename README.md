@@ -6,6 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![Python](https://img.shields.io/pypi/pyversions/youtube-kit?cacheSeconds=3600)](https://pypi.org/project/youtube-kit/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/eukosh/youtube-kit/blob/main/LICENSE)
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/eukosh/youtube-kit)
 
 YouTube CLI (`ytk`) and MCP server, built for agents and humans. Let Claude Code, Codex, Cursor, Claude Desktop or ChatGPT work on your channel: analytics, uploads, metadata, playlists and comment moderation. It handles several channels, and you can run the same commands in your own terminal.
 
@@ -65,7 +66,7 @@ In clients configured with JSON (Claude Desktop, Cursor and others):
 
 In the ChatGPT desktop app: Settings → MCP servers → Add server → STDIO, with the command `uvx youtube-kit mcp`. Codex shares that setting (`codex mcp add youtube -- uvx youtube-kit mcp`).
 
-The server uses your `ytk auth login` logins. If you also installed `ytk` with `uv tool install`, `uvx` runs that installed version: `uv tool upgrade youtube-kit` updates both. Not set up yet? The model can walk you through it with the `setup_guide` tool.
+The server uses your `ytk auth login` logins. If you also installed `ytk` with `uv tool install`, `uvx` runs that installed version: `ytk upgrade` updates both. Restart the MCP client afterwards. Not set up yet? The model can walk you through it with the `setup_guide` tool.
 
 ## What it covers
 
@@ -122,7 +123,8 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 | `YOUTUBE_CLIENT_SECRETS` | Path to the OAuth client JSON |
 | `YOUTUBE_TOKEN_DIR` | Directory of stored logins, one file per channel |
 | `YOUTUBE_CHANNEL` | Channel to work on by default (UC… ID, @handle or exact title), overriding `ytk auth switch` |
-| `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits) |
+| `YOUTUBE_CONFIG_FILE` | Path to `config.toml` (delete limits, update check) |
+| `YTK_NO_UPDATE_CHECK` | Set (even empty): no daily check for a newer release |
 
 </details>
 
@@ -133,6 +135,7 @@ Credentials and `config.toml` live in the user config directory (`~/Library/Appl
 - **Quota costs up front.** Each command's `--help` and each MCP tool description states what it spends.
 - **One core.** The CLI and the MCP server are thin layers over the same code, and a test fails if either misses an operation.
 - **Guarded deletes.** See below.
+- **Update notices.** `ytk` checks PyPI once a day in the background and tells you when a newer release is out: after the output at a terminal, as an `{"update": ...}` stderr line for agents, and in the MCP server's instructions at startup. `ytk upgrade` installs it. Turn the check off with `check = false` under `[updates]` in `config.toml` or `YTK_NO_UPDATE_CHECK=1`; it's also off when `CI` or `NO_UPDATE_NOTIFIER` is set.
 
 ## Deleting
 
