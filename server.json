@@ -3,7 +3,7 @@
   "name": "io.github.eukosh/youtube-kit",
   "title": "youtube-kit",
   "description": "YouTube CLI and MCP server: search and read public YouTube, and manage your own channels.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "websiteUrl": "https://github.com/eukosh/youtube-kit#readme",
   "repository": {
     "url": "https://github.com/eukosh/youtube-kit",
@@ -14,7 +14,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "youtube-kit",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
