@@ -17,6 +17,9 @@ MAX_CAPTION_MB = 100
 PARAGRAPH_SECONDS = 30
 # Forced subtitles cover only the parts not in the main language, so YouTube's full track beats them.
 _READ_RANK = {"standard": 0, "asr": 1, "forced": 2}
+# A track YouTube failed to process can't stand in for one it serves; a syncing one may not be ready yet.
+# Any other status, or none, counts as serving.
+_STATUS_RANK = {"syncing": 1, "failed": 2}
 # An SRT cue: its start time on the timing line, then text up to a blank line.
 _CUE = re.compile(r"^(\d+):(\d{2}):(\d{2})[,.]\d{3}[ \t]*-->.*\n((?:[ \t]*\S.*(?:\n|$))*)", re.MULTILINE)
 
@@ -44,8 +47,8 @@ def get_transcript(
 ) -> Transcript:
     """What is said in one of your videos, from its captions, including the ones YouTube generates.
 
-    YouTube lets only a video's owner download its captions. Of several tracks in a language, a published one
-    you wrote is preferred over YouTube's.
+    YouTube lets only a video's owner download its captions. Of several tracks in a language, one YouTube is
+    serving is preferred over one it failed to process, then a published one you wrote over YouTube's.
 
     Args:
         video: Video ID or URL.
@@ -178,7 +181,8 @@ def _tracks(youtube: Resource, video_id: str) -> list[CaptionTrack]:
 
 
 def _to_read(tracks: list[CaptionTrack], video_id: str, language: str | None) -> CaptionTrack:
-    """The track asked for, else the spoken language's: the author's own over YouTube's, then the exact language."""
+    """The track asked for, else the spoken language's: a working one, the author's own over YouTube's, then the
+    exact language."""
     if language:
         matches = _in_language(tracks, video_id, language)
     else:
@@ -196,6 +200,7 @@ def _to_read(tracks: list[CaptionTrack], video_id: str, language: str | None) ->
     return max(
         matches,
         key=lambda track: (
+            -_STATUS_RANK.get(track.status, 0),
             not track.draft,
             -_READ_RANK[track.kind],
             track.language.lower() == (language or "").lower(),

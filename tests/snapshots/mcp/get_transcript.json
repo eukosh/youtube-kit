@@ -6,7 +6,7 @@
     "read_only_hint": true,
     "title": null
   },
-  "description": "What is said in one of your videos, from its captions, including the ones YouTube generates.\n\nYouTube lets only a video's owner download its captions. Of several tracks in a language, a published one\nyou wrote is preferred over YouTube's.\n\nQuota: 252 units.",
+  "description": "What is said in one of your videos, from its captions, including the ones YouTube generates.\n\nYouTube lets only a video's owner download its captions. Of several tracks in a language, one YouTube is\nserving is preferred over one it failed to process, then a published one you wrote over YouTube's.\n\nQuota: 252 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {

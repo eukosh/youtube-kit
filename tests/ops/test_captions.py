@@ -155,6 +155,24 @@ def test_transcript_prefers_youtubes_published_track_over_a_draft(api, own_video
     assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "generated"
 
 
+def test_transcript_prefers_a_serving_track_over_one_youtube_failed_to_process(api, own_video):
+    given_tracks(
+        api,
+        caption_resource("failed", status="failed"),
+        caption_resource("syncing", status="syncing"),
+        caption_resource("generated", kind="asr"),
+    )
+    api.oauth.captions().download().execute.return_value = SRT.encode()
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "generated"
+
+    given_tracks(api, caption_resource("failed", status="failed"), caption_resource("unknown", status=None))
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "unknown"
+    given_tracks(api, caption_resource("failed", status="failed"), caption_resource("syncing", status="syncing"))
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "syncing"
+    given_tracks(api, caption_resource("failed", status="failed"))
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "failed"
+
+
 def test_transcript_takes_the_newest_of_equal_tracks(api, own_video):
     given_tracks(
         api,
@@ -219,6 +237,14 @@ def test_update_caption_keeps_the_draft_state_unless_asked(api, own_video, tmp_p
 
     captions.update_caption("dQw4w9WgXcQ", language="en", draft=False)
     assert api.oauth.captions().update.call_args.kwargs["body"]["snippet"] == {"isDraft": False}
+
+
+def test_update_caption_still_targets_a_track_youtube_failed_to_process(api, own_video):
+    # A failed track is the one to replace, so changing a track ignores the status reading prefers.
+    given_tracks(api, caption_resource("generated", "en", "asr"), caption_resource("broken", status="failed"))
+    api.oauth.captions().update().execute.return_value = caption_resource("broken", status="failed")
+    captions.update_caption("dQw4w9WgXcQ", language="en", draft=True)
+    assert api.oauth.captions().update.call_args.kwargs["body"]["id"] == "broken"
 
 
 def test_update_caption_checks_the_file_before_spending_quota(api, tmp_path):
