@@ -18,6 +18,7 @@ PARAGRAPH_SECONDS = 30
 # Forced subtitles cover only the parts not in the main language, so YouTube's full track beats them.
 _READ_RANK = {"standard": 0, "asr": 1, "forced": 2}
 # A track YouTube failed to process can't stand in for one it serves; a syncing one may not be ready yet.
+# Any other status, or none, counts as serving.
 _STATUS_RANK = {"syncing": 1, "failed": 2}
 # An SRT cue: its start time on the timing line, then text up to a blank line.
 _CUE = re.compile(r"^(\d+):(\d{2}):(\d{2})[,.]\d{3}[ \t]*-->.*\n((?:[ \t]*\S.*(?:\n|$))*)", re.MULTILINE)
@@ -199,7 +200,7 @@ def _to_read(tracks: list[CaptionTrack], video_id: str, language: str | None) ->
     return max(
         matches,
         key=lambda track: (
-            -_STATUS_RANK.get(track.status or "", 0),
+            -_STATUS_RANK.get(track.status, 0),
             not track.draft,
             -_READ_RANK[track.kind],
             track.language.lower() == (language or "").lower(),
