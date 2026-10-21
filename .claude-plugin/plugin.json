@@ -1,6 +1,6 @@
 {
   "name": "youtube-kit",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Read YouTube, manage your channels and pull analytics through the ytk CLI.",
   "author": {
     "name": "Eugene Kosharnyi",

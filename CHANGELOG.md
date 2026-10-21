@@ -5,6 +5,13 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.7.1](https://github.com/eukosh/youtube-kit/compare/v0.7.0...v0.7.1) (2026-10-21)
+
+
+### Fixed
+
+* prefer a working caption track over one YouTube failed to process ([#20](https://github.com/eukosh/youtube-kit/issues/20)) ([772e552](https://github.com/eukosh/youtube-kit/commit/772e552c0f675dd67abd9090011073c4701599c5))
+
 ## [0.7.0](https://github.com/eukosh/youtube-kit/compare/v0.6.0...v0.7.0) (2026-10-19)
 
 
