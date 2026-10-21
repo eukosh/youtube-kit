@@ -155,6 +155,22 @@ def test_transcript_prefers_youtubes_published_track_over_a_draft(api, own_video
     assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "generated"
 
 
+def test_transcript_prefers_a_serving_track_over_one_youtube_failed_to_process(api, own_video):
+    given_tracks(
+        api,
+        caption_resource("failed", status="failed"),
+        caption_resource("syncing", status="syncing"),
+        caption_resource("generated", kind="asr"),
+    )
+    api.oauth.captions().download().execute.return_value = SRT.encode()
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "generated"
+
+    given_tracks(api, caption_resource("failed", status="failed"), caption_resource("syncing", status="syncing"))
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "syncing"
+    given_tracks(api, caption_resource("failed", status="failed"))
+    assert captions.get_transcript("dQw4w9WgXcQ").caption_id == "failed"
+
+
 def test_transcript_takes_the_newest_of_equal_tracks(api, own_video):
     given_tracks(
         api,
