@@ -168,7 +168,7 @@ def test_remove_from_playlist_refuses_a_scan_cut_off_at_the_playlist_cap(api, mo
     monkeypatch.setattr(playlists, "_MAX_PLAYLIST_LENGTH", 1)
     api.oauth.playlistItems().list().execute.side_effect = [VIDEO_NOT_FOUND, _entries("gKcKEGRfoAM", token="next")]
 
-    with pytest.raises(YouTubeError, match="more than 1 entries"):
+    with pytest.raises(YouTubeError, match=r"more than 1 entries.*YouTube Studio"):
         playlists.remove_from_playlist("PL1", "7A22uuMVA6w")
     api.oauth.playlistItems().delete.assert_not_called()
 

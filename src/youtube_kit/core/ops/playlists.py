@@ -212,7 +212,7 @@ def remove_from_playlist(playlist: str, video: str) -> PlaylistRemoval:
     youtube = client.oauth()
     removed = sum(
         delete_if_present(youtube.playlistItems().delete(id=item["id"]))
-        for item in _occurrences(playlist_id, video_id, deleted_video=True)
+        for item in _occurrences(playlist_id, video_id, scan_if_deleted=True)
     )
     return PlaylistRemoval(playlist_id=playlist_id, video_id=video_id, removed=removed)
 
@@ -285,11 +285,8 @@ def set_playlist_thumbnail(playlist: str, image: Path) -> PlaylistImage:
     )
 
 
-def _occurrences(playlist_id: str, video_id: str, *, deleted_video: bool = False) -> list[dict]:
-    """The playlist items holding a video; more than one if it was added repeatedly.
-
-    With deleted_video, falls back to reading the whole playlist when YouTube answers videoNotFound.
-    """
+def _occurrences(playlist_id: str, video_id: str, *, scan_if_deleted: bool = False) -> list[dict]:
+    """The playlist items holding a video; more than one if it was added repeatedly."""
     items = client.oauth().playlistItems()
     try:
         return (
@@ -298,7 +295,7 @@ def _occurrences(playlist_id: str, video_id: str, *, deleted_video: bool = False
             .get("items", [])
         )
     except HttpError as e:
-        if not deleted_video or http_reason(e) != "videoNotFound":
+        if not scan_if_deleted or http_reason(e) != "videoNotFound":
             raise
     # The videoId filter fails once a video is deleted, though the playlist keeps its entry: read the whole playlist.
     page = collect(
@@ -310,7 +307,7 @@ def _occurrences(playlist_id: str, video_id: str, *, deleted_video: bool = False
     if page.next_page_token:
         raise YouTubeError(
             f"Playlist {playlist_id} has more than {_MAX_PLAYLIST_LENGTH} entries, "
-            f"too many to search for video {video_id}."
+            f"too many to search for video {video_id}. Remove it in YouTube Studio."
         )
     return [item for item in page.items if item.get("contentDetails", {}).get("videoId") == video_id]
 
