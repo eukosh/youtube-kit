@@ -33,7 +33,7 @@ from ._common import (
 from .channels import copied_from_recent_uploads, my_channel_id, owner_or
 
 _PARTS = "snippet,status,contentDetails"
-_MAX_PLAYLIST_LENGTH = 5000  # YouTube caps playlists here, so this limit reads a whole playlist.
+_MAX_PLAYLIST_LENGTH = 5000  # YouTube's cap on a user playlist (uploads and Watch Later can be longer)
 
 
 @operation(quota=1, read_only=True, idempotent=True, paginated=True)
@@ -201,7 +201,8 @@ def add_video_to_playlist(playlist: str, video: str, *, position: int | None = N
 def remove_from_playlist(playlist: str, video: str) -> PlaylistRemoval:
     """Remove a video from one of your playlists, every time it appears. The video itself is not affected.
 
-    A deleted video's leftover entry is found by reading the whole playlist: 1 more unit per 50 entries.
+    YouTube can't look up entries of a deleted video, so for a deleted or unknown video the whole playlist is read:
+    1 more unit per 50 entries.
 
     Args:
         playlist: Playlist ID or URL.
@@ -287,7 +288,7 @@ def set_playlist_thumbnail(playlist: str, image: Path) -> PlaylistImage:
 def _occurrences(playlist_id: str, video_id: str, *, deleted_video: bool = False) -> list[dict]:
     """The playlist items holding a video; more than one if it was added repeatedly.
 
-    With deleted_video, a video YouTube no longer knows is looked for by reading the whole playlist.
+    With deleted_video, falls back to reading the whole playlist when YouTube answers videoNotFound.
     """
     items = client.oauth().playlistItems()
     try:
@@ -301,12 +302,17 @@ def _occurrences(playlist_id: str, video_id: str, *, deleted_video: bool = False
             raise
     # The videoId filter fails once a video is deleted, though the playlist keeps its entry: read the whole playlist.
     page = collect(
-        lambda **page: items.list(part="snippet", playlistId=playlist_id, **page),
+        lambda **page: items.list(part="contentDetails", playlistId=playlist_id, **page),
         limit=_MAX_PLAYLIST_LENGTH,
         page_token=None,
         to_item=lambda item: item,
     )
-    return [item for item in page.items if item["snippet"]["resourceId"].get("videoId") == video_id]
+    if page.next_page_token:
+        raise YouTubeError(
+            f"Playlist {playlist_id} has more than {_MAX_PLAYLIST_LENGTH} entries, "
+            f"too many to search for video {video_id}."
+        )
+    return [item for item in page.items if item.get("contentDetails", {}).get("videoId") == video_id]
 
 
 def _item_snippet(playlist_id: str, video_id: str, position: int | None) -> dict:
