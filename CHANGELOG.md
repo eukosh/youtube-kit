@@ -5,6 +5,13 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.7.3](https://github.com/eukosh/youtube-kit/compare/v0.7.2...v0.7.3) (2026-10-25)
+
+
+### Fixed
+
+* remove a deleted video's leftover entry from a playlist ([#24](https://github.com/eukosh/youtube-kit/issues/24)) ([8fad97a](https://github.com/eukosh/youtube-kit/commit/8fad97a8e8e4246ed667be706e183c2670ed599e))
+
 ## [0.7.2](https://github.com/eukosh/youtube-kit/compare/v0.7.1...v0.7.2) (2026-10-25)
 
 
