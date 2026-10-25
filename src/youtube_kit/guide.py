@@ -5,14 +5,13 @@ them to agents and MCP clients.
 """
 
 import sys
+import textwrap
 import webbrowser
 from pathlib import Path
 
-from rich.console import Console, Group
+from rich.console import Console
 from rich.markup import escape
-from rich.padding import Padding
 from rich.style import Style
-from rich.table import Table
 from rich.text import Text
 
 from .core import InvalidRequest, auth
@@ -56,26 +55,29 @@ def connected(channel: MyChannel) -> None:
 
 
 def _show(task: SetupTask, bullet: str, *, open_page: bool) -> None:
-    parts: list = [Text(task.do)]
+    indent = " " * (2 + len(bullet))
+    _hang(task.do, "  " + bullet)
     if task.url:
-        parts.append(Text.assemble((task.url, Style(color="cyan", link=task.url))))
+        _hang(task.url, indent, Style(color="cyan", link=task.url))
         if open_page:
             webbrowser.open(task.url)
     if task.values:
-        values = Table.grid(padding=(0, 2))
-        values.add_column(style="dim", no_wrap=True)
-        values.add_column()
+        width = max(map(len, task.values))
         for field, value in task.values.items():
-            values.add_row(field, value)
-        parts.append(Padding(values, (0, 0, 0, 2)))
-    body = Group(*parts)
-    if bullet:  # a grid keeps wrapped lines indented under the text, not the bullet
-        row = Table.grid(padding=(0, 1, 0, 0))
-        row.add_column(no_wrap=True)
-        row.add_column()
-        row.add_row(bullet.strip(), body)
-        body = row
-    console.print(Padding(body, (0, 0, 0, 2)))
+            _hang(value, Text(f"{indent}  {field:<{width}}  ", "dim"))
+
+
+def _hang(text: str, first: str | Text, style: str | Style = "") -> None:
+    """Print text after the prefix `first`, wrapping under it.
+
+    Rich layouts cut a word wider than the line with "…". Here a long URL stays whole on one line
+    the terminal soft-wraps, so copying it gives the whole URL.
+    """
+    rest = " " * len(first)
+    width = max(console.width - len(rest), 20)
+    lines = textwrap.wrap(text, width, break_long_words=False, break_on_hyphens=False) or [""]
+    for index, line in enumerate(lines):
+        console.print(Text.assemble(rest if index else first, (line, style)), soft_wrap=True)
 
 
 def _downloaded_or_asked() -> str:
