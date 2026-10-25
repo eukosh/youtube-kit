@@ -6,7 +6,7 @@
     "read_only_hint": false,
     "title": null
   },
-  "description": "Remove a video from one of your playlists, every time it appears. The video itself is not affected.\n\nQuota: 51 units.",
+  "description": "Remove a video from one of your playlists, every time it appears. The video itself is not affected.\n\nA deleted video's leftover entry is found by reading the whole playlist: 1 more unit per 50 entries.\n\nQuota: 51 units.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
