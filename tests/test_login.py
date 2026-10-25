@@ -5,6 +5,7 @@ import json
 import sys
 
 import pytest
+from rich.text import Text
 
 from youtube_kit import guide
 from youtube_kit.cli import main
@@ -117,6 +118,22 @@ def test_no_browser_prints_links_without_opening_them(capsys, google, person, do
     assert code == 0
     assert google == []
     assert "https://console.cloud.google.com/projectcreate" in err
+
+
+def test_links_stay_whole_in_a_narrow_terminal(capsys, monkeypatch, google, person, downloads):
+    (downloads / "client_secret_1.json").write_text(CLIENT)
+    monkeypatch.setattr(guide.console, "width", 40)
+    person(*[""] * STEPS, "")
+
+    code, _, err = run(capsys, "--no-browser")
+
+    shown = Text.from_ansi(err).plain  # with colour on, a cut link would still carry its URL in the escape code
+    assert code == 0
+    for step in guide.CLIENT_STEPS:
+        for task in step.tasks:
+            for text in [task.url, *(task.values or {}).values()]:
+                if text and text.startswith("https://"):
+                    assert text in shown
 
 
 def test_client_secrets_flag_skips_the_steps_at_a_terminal(capsys, google, person):
