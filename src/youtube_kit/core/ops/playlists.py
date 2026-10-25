@@ -33,6 +33,7 @@ from ._common import (
 from .channels import copied_from_recent_uploads, my_channel_id, owner_or
 
 _PARTS = "snippet,status,contentDetails"
+_MAX_PLAYLIST_LENGTH = 5000  # YouTube's cap on a user playlist (uploads and Watch Later can be longer)
 
 
 @operation(quota=1, read_only=True, idempotent=True, paginated=True)
@@ -200,6 +201,9 @@ def add_video_to_playlist(playlist: str, video: str, *, position: int | None = N
 def remove_from_playlist(playlist: str, video: str) -> PlaylistRemoval:
     """Remove a video from one of your playlists, every time it appears. The video itself is not affected.
 
+    YouTube can't look up entries of a deleted video, so for a deleted or unknown video the whole playlist is read:
+    1 more unit per 50 entries.
+
     Args:
         playlist: Playlist ID or URL.
         video: Video ID or URL.
@@ -207,7 +211,8 @@ def remove_from_playlist(playlist: str, video: str) -> PlaylistRemoval:
     playlist_id, video_id = parse.playlist_id(playlist), parse.video_id(video)
     youtube = client.oauth()
     removed = sum(
-        delete_if_present(youtube.playlistItems().delete(id=item["id"])) for item in _occurrences(playlist_id, video_id)
+        delete_if_present(youtube.playlistItems().delete(id=item["id"]))
+        for item in _occurrences(playlist_id, video_id, scan_if_deleted=True)
     )
     return PlaylistRemoval(playlist_id=playlist_id, video_id=video_id, removed=removed)
 
@@ -280,14 +285,31 @@ def set_playlist_thumbnail(playlist: str, image: Path) -> PlaylistImage:
     )
 
 
-def _occurrences(playlist_id: str, video_id: str) -> list[dict]:
+def _occurrences(playlist_id: str, video_id: str, *, scan_if_deleted: bool = False) -> list[dict]:
     """The playlist items holding a video; more than one if it was added repeatedly."""
-    request = (
-        client.oauth()
-        .playlistItems()
-        .list(part="id", playlistId=playlist_id, videoId=video_id, maxResults=API_PAGE_SIZE)
+    items = client.oauth().playlistItems()
+    try:
+        return (
+            items.list(part="id", playlistId=playlist_id, videoId=video_id, maxResults=API_PAGE_SIZE)
+            .execute()
+            .get("items", [])
+        )
+    except HttpError as e:
+        if not scan_if_deleted or http_reason(e) != "videoNotFound":
+            raise
+    # The videoId filter fails once a video is deleted, though the playlist keeps its entry: read the whole playlist.
+    page = collect(
+        lambda **page: items.list(part="contentDetails", playlistId=playlist_id, **page),
+        limit=_MAX_PLAYLIST_LENGTH,
+        page_token=None,
+        to_item=lambda item: item,
     )
-    return request.execute().get("items", [])
+    if page.next_page_token:
+        raise YouTubeError(
+            f"Playlist {playlist_id} has more than {_MAX_PLAYLIST_LENGTH} entries, "
+            f"too many to search for video {video_id}. Remove it in YouTube Studio."
+        )
+    return [item for item in page.items if item.get("contentDetails", {}).get("videoId") == video_id]
 
 
 def _item_snippet(playlist_id: str, video_id: str, position: int | None) -> dict:

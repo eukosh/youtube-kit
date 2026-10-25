@@ -135,6 +135,71 @@ def test_remove_from_playlist_is_idempotent(api):
     assert playlists.remove_from_playlist("PL1", "dQw4w9WgXcQ").removed == 0
 
 
+def _entries(*video_ids, token=None):
+    items = [{"id": f"item-{v}", "contentDetails": {"videoId": v}} for v in video_ids]
+    return {"items": items, "nextPageToken": token} if token else {"items": items}
+
+
+VIDEO_NOT_FOUND = http_error(404, "videoNotFound", "Video not found.")
+
+
+def test_remove_from_playlist_finds_a_deleted_video_by_reading_the_playlist(api):
+    # YouTube rejects the videoId filter once the video is deleted, though the playlist still holds it.
+    first_page = _entries("gKcKEGRfoAM", "7A22uuMVA6w", token="next")
+    first_page["items"].append({"id": "item-no-video", "contentDetails": {}})
+    items = api.oauth.playlistItems()
+    items.list().execute.side_effect = [VIDEO_NOT_FOUND, first_page, _entries("7A22uuMVA6w")]
+    items.list.reset_mock()
+
+    result = playlists.remove_from_playlist("PL1", "7A22uuMVA6w")
+
+    assert result.removed == 2
+    deleted = [call.kwargs["id"] for call in items.delete.call_args_list if call.kwargs]
+    assert deleted == ["item-7A22uuMVA6w", "item-7A22uuMVA6w"]
+    filtered, *scans = [call.kwargs for call in items.list.call_args_list]
+    assert filtered["videoId"] == "7A22uuMVA6w"
+    assert scans == [
+        {"part": "contentDetails", "playlistId": "PL1", "maxResults": 50},
+        {"part": "contentDetails", "playlistId": "PL1", "maxResults": 50, "pageToken": "next"},
+    ]
+
+
+def test_remove_from_playlist_refuses_a_scan_cut_off_at_the_playlist_cap(api, monkeypatch):
+    monkeypatch.setattr(playlists, "_MAX_PLAYLIST_LENGTH", 1)
+    api.oauth.playlistItems().list().execute.side_effect = [VIDEO_NOT_FOUND, _entries("gKcKEGRfoAM", token="next")]
+
+    with pytest.raises(YouTubeError, match=r"more than 1 entries.*YouTube Studio"):
+        playlists.remove_from_playlist("PL1", "7A22uuMVA6w")
+    api.oauth.playlistItems().delete.assert_not_called()
+
+
+def test_remove_from_playlist_of_a_video_in_no_entry_removes_nothing(api):
+    api.oauth.playlistItems().list().execute.side_effect = [VIDEO_NOT_FOUND, _entries("gKcKEGRfoAM")]
+
+    assert playlists.remove_from_playlist("PL1", "7A22uuMVA6w").removed == 0
+    api.oauth.playlistItems().delete.assert_not_called()
+
+
+def test_remove_from_playlist_raises_other_errors_without_reading_the_playlist(api):
+    items = api.oauth.playlistItems()
+    items.list().execute.side_effect = http_error(404, "playlistNotFound", "Playlist not found.")
+    items.list.reset_mock()
+
+    with pytest.raises(NotFound):
+        playlists.remove_from_playlist("PL1", "7A22uuMVA6w")
+    assert items.list.call_count == 1
+
+
+def test_move_in_playlist_does_not_read_the_playlist_for_a_deleted_video(api):
+    items = api.oauth.playlistItems()
+    items.list().execute.side_effect = VIDEO_NOT_FOUND
+    items.list.reset_mock()
+
+    with pytest.raises(NotFound):
+        playlists.move_in_playlist("PL1", "7A22uuMVA6w", position=0)
+    assert items.list.call_count == 1
+
+
 def test_move_in_playlist(api):
     api.oauth.playlistItems().list().execute.return_value = {"items": [{"id": "item1"}]}
     api.oauth.playlistItems().update().execute.return_value = playlist_item_resource(position=0)
