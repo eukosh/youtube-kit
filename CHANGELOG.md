@@ -5,6 +5,13 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.7.2](https://github.com/eukosh/youtube-kit/compare/v0.7.1...v0.7.2) (2026-10-25)
+
+
+### Fixed
+
+* show setup links in full instead of cutting them off with "…" ([#22](https://github.com/eukosh/youtube-kit/issues/22)) ([bf97653](https://github.com/eukosh/youtube-kit/commit/bf97653b8de6490ba7ecd762e0bec986b991bc27))
+
 ## [0.7.1](https://github.com/eukosh/youtube-kit/compare/v0.7.0...v0.7.1) (2026-10-21)
 
 
