@@ -129,6 +129,7 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
     enabled = playlist_resource()
     enabled["status"]["podcastStatus"] = "enabled"
     api.oauth.playlists().update().execute.return_value = enabled
+    current["status"]["podcastStatus"] = "disabled"
 
     assert playlists.update_playlist("PL1", podcast=True).podcast_status == "enabled"
     assert api.oauth.playlists().update.call_args.kwargs["body"]["status"] == {
@@ -149,7 +150,7 @@ def test_update_playlist_podcast_without_an_image_points_at_the_thumbnail(api):
         playlists.update_playlist("PL1", podcast=False)
 
     api.oauth.playlistImages().list().execute.return_value = {"items": [{"id": "img"}]}
-    with pytest.raises(InvalidRequest, match="API says no"):
+    with pytest.raises(InvalidRequest, match=r"^API says no"):
         playlists.update_playlist("PL1", podcast=True)
 
 
@@ -172,7 +173,7 @@ def test_update_playlist_podcast_keeps_youtubes_error_when_the_image_check_fails
     api.oauth.playlists().update().execute.side_effect = http_error(400, "invalidTitle")
     api.oauth.playlistImages().list().execute.side_effect = failure
 
-    with pytest.raises(InvalidRequest, match="API says no"):
+    with pytest.raises(InvalidRequest, match=r"^API says no"):
         playlists.update_playlist("PL1", podcast=True)
 
 

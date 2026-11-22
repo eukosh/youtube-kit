@@ -119,7 +119,7 @@
           }
         ],
         "default": null,
-        "description": "enabled when the playlist is a podcast."
+        "description": "enabled, disabled, or unspecified."
       },
       "privacy": {
         "anyOf": [

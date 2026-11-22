@@ -179,7 +179,7 @@ def update_playlist(
 
 def _has_image(youtube: Any, playlist_id: str) -> bool:
     try:
-        return bool(youtube.playlistImages().list(part="id", parent=playlist_id).execute().get("items"))
+        return bool(youtube.playlistImages().list(part="snippet", parent=playlist_id).execute().get("items"))
     except (HttpError, *NETWORK_ERRORS):
         return True  # can't tell, so keep YouTube's own error
 
