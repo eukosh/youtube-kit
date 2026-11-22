@@ -142,9 +142,11 @@ def test_update_playlist_podcast_without_an_image_points_at_the_thumbnail(api):
     api.oauth.playlists().update().execute.side_effect = http_error(400, "badRequest")
     api.oauth.playlistImages().list().execute.return_value = {"items": []}
 
-    with pytest.raises(InvalidRequest, match=r"playlist thumbnail.*API says no"):
+    with pytest.raises(InvalidRequest, match=r"playlist thumbnail.*retry in a minute.*API says no"):
         playlists.update_playlist("PL1", podcast=True)
     assert api.oauth.playlistImages().list.call_args.kwargs["parent"] == "PL1"
+    with pytest.raises(InvalidRequest, match=r"^API says no"):
+        playlists.update_playlist("PL1", podcast=False)
 
     api.oauth.playlistImages().list().execute.return_value = {"items": [{"id": "img"}]}
     with pytest.raises(InvalidRequest, match="API says no"):
