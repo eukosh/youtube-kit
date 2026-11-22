@@ -77,6 +77,7 @@ def test_list_playlists_defaults_to_mine(api):
     [playlist] = playlists.list_playlists().items
 
     assert (playlist.title, playlist.item_count, playlist.privacy) == ("Mix", 4, "public")
+    assert playlist.podcast_status is None
     assert api.oauth.playlists().list.call_args.kwargs["mine"] is True
 
 
@@ -117,6 +118,26 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
     playlists.update_playlist("PL1", language="de")
 
     assert api.oauth.playlists().update.call_args.kwargs["body"]["snippet"]["defaultLanguage"] == "de"
+
+    playlists.update_playlist("PL1", podcast=False)
+
+    assert api.oauth.playlists().update.call_args.kwargs["body"]["status"] == {
+        "privacyStatus": "public",
+        "podcastStatus": "disabled",
+    }
+
+
+def test_update_playlist_podcast_without_an_image_points_at_the_thumbnail(api):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.side_effect = http_error(400, "badRequest")
+    api.oauth.playlistImages().list().execute.return_value = {"items": []}
+
+    with pytest.raises(InvalidRequest, match="playlist thumbnail"):
+        playlists.update_playlist("PL1", podcast=True)
+
+    api.oauth.playlistImages().list().execute.return_value = {"items": [{"id": "img"}]}
+    with pytest.raises(InvalidRequest, match="API says no"):
+        playlists.update_playlist("PL1", podcast=True)
 
 
 def test_remove_from_playlist_removes_every_occurrence(api):
