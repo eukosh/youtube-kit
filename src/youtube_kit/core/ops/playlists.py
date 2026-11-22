@@ -165,13 +165,20 @@ def update_playlist(
     try:
         return _playlist(youtube.playlists().update(part=",".join(parts), body=body).execute())
     except HttpError as e:
-        # YouTube documents no reason for this, so check for an image only once the update failed.
-        if podcast and not youtube.playlistImages().list(part="id", parent=playlist_id).execute().get("items"):
+        # YouTube documents no reason for a missing image, so look for one only after a refusal that could be it.
+        refused = isinstance(from_http_error(e), InvalidRequest | Forbidden) and http_reason(e) != "playlistForbidden"
+        if podcast and refused and not _has_image(youtube, playlist_id):
             raise InvalidRequest(
-                f"Playlist {playlist_id} needs an image before it can be a podcast. "
-                "Set a square one with `ytk playlist thumbnail` first."
+                f"Playlist {playlist_id} needs an image before it can be a podcast. Set a square playlist thumbnail first."
             ) from e
         raise
+
+
+def _has_image(youtube: Any, playlist_id: str) -> bool:
+    try:
+        return bool(youtube.playlistImages().list(part="id", parent=playlist_id).execute().get("items"))
+    except HttpError:
+        return True  # can't tell, so keep YouTube's own error
 
 
 @operation(quota=52, destructive=True, idempotent=True, oauth=True)  # lookup + ownership check + delete

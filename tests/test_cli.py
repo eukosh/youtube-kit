@@ -212,6 +212,12 @@ def test_bool_flags_negate(capsys, api):
     assert run(capsys, "video", "update", "dQw4w9WgXcQ", "--no-made-for-kids")[0] == 0
     assert api.oauth.videos().update.call_args.kwargs["body"]["status"]["selfDeclaredMadeForKids"] is False
 
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.return_value = playlist_resource()
+
+    assert run(capsys, "playlist", "update", "PL1", "--no-podcast")[0] == 0
+    assert api.oauth.playlists().update.call_args.kwargs["body"]["status"]["podcastStatus"] == "disabled"
+
 
 # ---------- guarded deletes ----------
 

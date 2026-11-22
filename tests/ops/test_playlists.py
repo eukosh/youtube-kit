@@ -140,6 +140,28 @@ def test_update_playlist_podcast_without_an_image_points_at_the_thumbnail(api):
         playlists.update_playlist("PL1", podcast=True)
 
 
+@pytest.mark.parametrize(
+    "error", [http_error(403, "quotaExceeded"), http_error(403, "playlistForbidden"), http_error(500, "backendError")]
+)
+def test_update_playlist_podcast_keeps_errors_that_are_not_about_the_image(api, error):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.side_effect = error
+    api.oauth.playlistImages().list().execute.return_value = {"items": []}
+
+    with pytest.raises(YouTubeError) as raised:
+        playlists.update_playlist("PL1", podcast=True)
+    assert "image" not in str(raised.value)
+
+
+def test_update_playlist_podcast_keeps_youtubes_error_when_the_image_check_fails(api):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.side_effect = http_error(400, "invalidTitle")
+    api.oauth.playlistImages().list().execute.side_effect = http_error(403, "quotaExceeded")
+
+    with pytest.raises(InvalidRequest, match="API says no"):
+        playlists.update_playlist("PL1", podcast=True)
+
+
 def test_remove_from_playlist_removes_every_occurrence(api):
     api.oauth.playlistItems().list().execute.return_value = {"items": [{"id": "a"}, {"id": "b"}]}
 
