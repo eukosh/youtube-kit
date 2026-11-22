@@ -119,7 +119,7 @@
           }
         ],
         "default": null,
-        "description": "enabled, disabled, or unspecified."
+        "description": "enabled, disabled, or unspecified. Missing when playlists are listed or fetched."
       },
       "privacy": {
         "anyOf": [

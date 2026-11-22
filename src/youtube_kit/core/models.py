@@ -161,7 +161,9 @@ class Playlist(BaseModel):
     channel_id: str | None = None
     published_at: datetime | None = None
     privacy: Privacy | None = None
-    podcast_status: str | None = Field(None, description="enabled, disabled, or unspecified.")
+    podcast_status: str | None = Field(
+        None, description="enabled, disabled, or unspecified. Missing when playlists are listed or fetched."
+    )
     item_count: int | None = None
 
 

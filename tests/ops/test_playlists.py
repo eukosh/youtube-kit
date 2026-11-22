@@ -98,7 +98,6 @@ def test_get_playlists_batches_by_50(api):
 
 def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(api):
     current = playlist_resource(localized={"title": "x"}, tags=["t"])
-    current["status"]["podcastStatus"] = "enabled"
     api.oauth.playlists().list().execute.return_value = {"items": [current]}
     api.oauth.playlists().update().execute.return_value = playlist_resource(title="New")
 
@@ -112,7 +111,7 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
 
     call = api.oauth.playlists().update.call_args.kwargs
     assert call["part"] == "snippet,status"
-    assert call["body"]["status"] == {"privacyStatus": "private", "podcastStatus": "enabled"}
+    assert call["body"]["status"] == {"privacyStatus": "private"}
     assert call["body"]["snippet"]["title"] == "Mix"
 
     playlists.update_playlist("PL1", language="de")
@@ -129,7 +128,6 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
     enabled = playlist_resource()
     enabled["status"]["podcastStatus"] = "enabled"
     api.oauth.playlists().update().execute.return_value = enabled
-    current["status"]["podcastStatus"] = "disabled"
 
     assert playlists.update_playlist("PL1", podcast=True).podcast_status == "enabled"
     assert api.oauth.playlists().update.call_args.kwargs["body"]["status"] == {

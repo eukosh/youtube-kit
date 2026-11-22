@@ -62,7 +62,7 @@ def list_playlists(
 
 @operation(quota=1, read_only=True, idempotent=True)
 def get_playlists(playlists: list[str]) -> list[Playlist]:
-    """Metadata of one or more playlists: title, description, privacy, podcast status, and item count.
+    """Metadata of one or more playlists: title, description, privacy, and item count.
 
     Args:
         playlists: Playlist IDs or URLs with a list= parameter. Fetched in batches of 50, 1 quota unit per batch.
@@ -143,7 +143,8 @@ def update_playlist(
         description: New description.
         language: Language of the title and description, e.g. en-US.
         privacy: New privacy status.
-        podcast: Whether the playlist is a podcast. Needs a playlist image first.
+        podcast: Whether the playlist is a podcast. Needs a playlist image first. The result reports podcast status;
+            YouTube leaves it out when playlists are listed or fetched.
     """
     playlist_id = parse.playlist_id(playlist)
     youtube = client.oauth()
@@ -159,7 +160,8 @@ def update_playlist(
     parts = ["snippet"]
     if privacy is not None or podcast is not None:
         podcast_status = None if podcast is None else "enabled" if podcast else "disabled"
-        body["status"] = pick(current["status"], ("privacyStatus", "podcastStatus")) | changes(
+        # podcastStatus can't be read back; YouTube keeps it when it is left out (checked live).
+        body["status"] = pick(current["status"], ("privacyStatus",)) | changes(
             privacyStatus=privacy, podcastStatus=podcast_status
         )
         parts.append("status")
