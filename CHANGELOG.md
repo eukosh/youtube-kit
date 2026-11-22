@@ -5,6 +5,13 @@ Notable changes in each release. Entries come from the
 The project uses [Semantic Versioning](https://semver.org/); until 1.0, minor versions may
 change command names, flags and JSON fields.
 
+## [0.8.0](https://github.com/eukosh/youtube-kit/compare/v0.7.3...v0.8.0) (2026-11-22)
+
+
+### Added
+
+* mark a playlist as a podcast with playlist update --podcast ([#29](https://github.com/eukosh/youtube-kit/issues/29)) ([f0acdbf](https://github.com/eukosh/youtube-kit/commit/f0acdbfc3f3970e10836c4699df4fc4803099c9e))
+
 ## [0.7.3](https://github.com/eukosh/youtube-kit/compare/v0.7.2...v0.7.3) (2026-10-25)
 
 
