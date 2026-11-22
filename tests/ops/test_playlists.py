@@ -77,6 +77,7 @@ def test_list_playlists_defaults_to_mine(api):
     [playlist] = playlists.list_playlists().items
 
     assert (playlist.title, playlist.item_count, playlist.privacy) == ("Mix", 4, "public")
+    assert playlist.podcast_status is None
     assert api.oauth.playlists().list.call_args.kwargs["mine"] is True
 
 

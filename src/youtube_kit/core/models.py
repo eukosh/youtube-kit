@@ -162,8 +162,7 @@ class Playlist(BaseModel):
     published_at: datetime | None = None
     privacy: Privacy | None = None
     podcast_status: str | None = Field(
-        None,
-        description="enabled, disabled, or unspecified. YouTube returns it only when an update sets privacy or podcast.",
+        None, description="enabled, disabled, or unspecified. Missing when playlists are listed or fetched."
     )
     item_count: int | None = None
 

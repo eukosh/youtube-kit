@@ -98,7 +98,7 @@
                 }
               ],
               "default": null,
-              "description": "enabled, disabled, or unspecified. YouTube returns it only when an update sets privacy or podcast."
+              "description": "enabled, disabled, or unspecified. Missing when playlists are listed or fetched."
             },
             "privacy": {
               "anyOf": [

@@ -143,7 +143,8 @@ def update_playlist(
         description: New description.
         language: Language of the title and description, e.g. en-US.
         privacy: New privacy status.
-        podcast: Whether the playlist is a podcast. Needs a playlist image first.
+        podcast: Whether the playlist is a podcast. Needs a playlist image first. The result reports podcast status;
+            YouTube leaves it out when playlists are listed or fetched.
     """
     playlist_id = parse.playlist_id(playlist)
     youtube = client.oauth()
@@ -159,6 +160,7 @@ def update_playlist(
     parts = ["snippet"]
     if privacy is not None or podcast is not None:
         podcast_status = None if podcast is None else "enabled" if podcast else "disabled"
+        # podcastStatus can't be read back; YouTube keeps it when it is left out (checked live).
         body["status"] = pick(current["status"], ("privacyStatus",)) | changes(
             privacyStatus=privacy, podcastStatus=podcast_status
         )
