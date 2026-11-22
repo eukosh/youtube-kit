@@ -62,7 +62,7 @@ def list_playlists(
 
 @operation(quota=1, read_only=True, idempotent=True)
 def get_playlists(playlists: list[str]) -> list[Playlist]:
-    """Metadata of one or more playlists: title, description, privacy, and item count.
+    """Metadata of one or more playlists: title, description, privacy, podcast status, and item count.
 
     Args:
         playlists: Playlist IDs or URLs with a list= parameter. Fetched in batches of 50, 1 quota unit per batch.
@@ -167,10 +167,12 @@ def update_playlist(
         return _playlist(youtube.playlists().update(part=",".join(parts), body=body).execute())
     except HttpError as e:
         # YouTube documents no reason for a missing image, so look for one only after a refusal that could be it.
-        refused = isinstance(from_http_error(e), InvalidRequest | Forbidden) and http_reason(e) != "playlistForbidden"
+        error = from_http_error(e)
+        refused = isinstance(error, InvalidRequest | Forbidden) and http_reason(e) != "playlistForbidden"
         if podcast and refused and not _has_image(youtube, playlist_id):
             raise InvalidRequest(
-                f"Playlist {playlist_id} needs an image before it can be a podcast. Set a square playlist thumbnail first."
+                f"Playlist {playlist_id} needs an image before it can be a podcast. Set a square playlist thumbnail "
+                f"first, or retry in a minute if you just set one. YouTube said: {error}"
             ) from e
         raise
 

@@ -126,14 +126,25 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
         "podcastStatus": "disabled",
     }
 
+    enabled = playlist_resource()
+    enabled["status"]["podcastStatus"] = "enabled"
+    api.oauth.playlists().update().execute.return_value = enabled
+
+    assert playlists.update_playlist("PL1", podcast=True).podcast_status == "enabled"
+    assert api.oauth.playlists().update.call_args.kwargs["body"]["status"] == {
+        "privacyStatus": "public",
+        "podcastStatus": "enabled",
+    }
+
 
 def test_update_playlist_podcast_without_an_image_points_at_the_thumbnail(api):
     api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
     api.oauth.playlists().update().execute.side_effect = http_error(400, "badRequest")
     api.oauth.playlistImages().list().execute.return_value = {"items": []}
 
-    with pytest.raises(InvalidRequest, match="playlist thumbnail"):
+    with pytest.raises(InvalidRequest, match=r"playlist thumbnail.*API says no"):
         playlists.update_playlist("PL1", podcast=True)
+    assert api.oauth.playlistImages().list.call_args.kwargs["parent"] == "PL1"
 
     api.oauth.playlistImages().list().execute.return_value = {"items": [{"id": "img"}]}
     with pytest.raises(InvalidRequest, match="API says no"):
