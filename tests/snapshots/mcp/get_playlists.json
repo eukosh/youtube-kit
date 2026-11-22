@@ -6,7 +6,7 @@
     "read_only_hint": true,
     "title": null
   },
-  "description": "Metadata of one or more playlists: title, description, privacy, and item count.\n\nQuota: 1 unit.",
+  "description": "Metadata of one or more playlists: title, description, privacy, podcast status, and item count.\n\nQuota: 1 unit.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
@@ -87,6 +87,18 @@
               ],
               "default": null,
               "description": "Language of the title and description, e.g. en-US."
+            },
+            "podcast_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "enabled, disabled, or unspecified."
             },
             "privacy": {
               "anyOf": [

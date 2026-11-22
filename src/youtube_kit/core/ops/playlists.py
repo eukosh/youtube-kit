@@ -6,6 +6,7 @@ from googleapiclient.errors import HttpError
 
 from .. import client, guard, parse
 from ..errors import (
+    NETWORK_ERRORS,
     OTHER_CHANNEL_HINT,
     Forbidden,
     InvalidRequest,
@@ -61,7 +62,7 @@ def list_playlists(
 
 @operation(quota=1, read_only=True, idempotent=True)
 def get_playlists(playlists: list[str]) -> list[Playlist]:
-    """Metadata of one or more playlists: title, description, privacy, and item count.
+    """Metadata of one or more playlists: title, description, privacy, podcast status, and item count.
 
     Args:
         playlists: Playlist IDs or URLs with a list= parameter. Fetched in batches of 50, 1 quota unit per batch.
@@ -132,6 +133,7 @@ def update_playlist(
     description: str | None = None,
     language: str | None = None,
     privacy: Privacy | None = None,
+    podcast: bool | None = None,
 ) -> Playlist:
     """Change one of your playlists. Only the fields you pass change.
 
@@ -141,6 +143,7 @@ def update_playlist(
         description: New description.
         language: Language of the title and description, e.g. en-US.
         privacy: New privacy status.
+        podcast: Whether the playlist is a podcast. Needs a playlist image first.
     """
     playlist_id = parse.playlist_id(playlist)
     youtube = client.oauth()
@@ -154,10 +157,31 @@ def update_playlist(
         | changes(title=title, description=description, defaultLanguage=language),
     }
     parts = ["snippet"]
-    if privacy is not None:
-        body["status"] = pick(current["status"], ("podcastStatus",)) | {"privacyStatus": privacy}
+    if privacy is not None or podcast is not None:
+        podcast_status = None if podcast is None else "enabled" if podcast else "disabled"
+        body["status"] = pick(current["status"], ("privacyStatus", "podcastStatus")) | changes(
+            privacyStatus=privacy, podcastStatus=podcast_status
+        )
         parts.append("status")
-    return _playlist(youtube.playlists().update(part=",".join(parts), body=body).execute())
+    try:
+        return _playlist(youtube.playlists().update(part=",".join(parts), body=body).execute())
+    except HttpError as e:
+        # YouTube documents no reason for a missing image, so look for one only after a refusal that could be it.
+        error = from_http_error(e)
+        refused = isinstance(error, InvalidRequest | Forbidden) and http_reason(e) != "playlistForbidden"
+        if podcast and refused and not _has_image(youtube, playlist_id):
+            raise InvalidRequest(
+                f"Playlist {playlist_id} needs an image before it can be a podcast. Set a square playlist thumbnail "
+                f"first, or retry in a minute if you just set one. YouTube said: {error}"
+            ) from e
+        raise
+
+
+def _has_image(youtube: Any, playlist_id: str) -> bool:
+    try:
+        return bool(youtube.playlistImages().list(part="snippet", parent=playlist_id).execute().get("items"))
+    except (HttpError, *NETWORK_ERRORS):
+        return True  # can't tell, so keep YouTube's own error
 
 
 @operation(quota=52, destructive=True, idempotent=True, oauth=True)  # lookup + ownership check + delete
@@ -330,6 +354,7 @@ def _playlist(item: dict) -> Playlist:
         channel_id=snippet.get("channelId"),
         published_at=snippet.get("publishedAt"),
         privacy=item.get("status", {}).get("privacyStatus"),
+        podcast_status=item.get("status", {}).get("podcastStatus"),
         item_count=to_int(item.get("contentDetails", {}).get("itemCount")),
     )
 

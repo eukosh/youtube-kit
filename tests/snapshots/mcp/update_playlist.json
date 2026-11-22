@@ -50,6 +50,18 @@
         "description": "Playlist ID or URL.",
         "type": "string"
       },
+      "podcast": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Whether the playlist is a podcast. Needs a playlist image first."
+      },
       "privacy": {
         "anyOf": [
           {
@@ -134,6 +146,18 @@
         ],
         "default": null,
         "description": "Language of the title and description, e.g. en-US."
+      },
+      "podcast_status": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "enabled, disabled, or unspecified."
       },
       "privacy": {
         "anyOf": [

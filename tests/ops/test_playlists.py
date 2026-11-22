@@ -77,6 +77,7 @@ def test_list_playlists_defaults_to_mine(api):
     [playlist] = playlists.list_playlists().items
 
     assert (playlist.title, playlist.item_count, playlist.privacy) == ("Mix", 4, "public")
+    assert playlist.podcast_status is None
     assert api.oauth.playlists().list.call_args.kwargs["mine"] is True
 
 
@@ -117,6 +118,63 @@ def test_update_playlist_keeps_other_fields_and_touches_status_only_when_asked(a
     playlists.update_playlist("PL1", language="de")
 
     assert api.oauth.playlists().update.call_args.kwargs["body"]["snippet"]["defaultLanguage"] == "de"
+
+    playlists.update_playlist("PL1", podcast=False)
+
+    assert api.oauth.playlists().update.call_args.kwargs["body"]["status"] == {
+        "privacyStatus": "public",
+        "podcastStatus": "disabled",
+    }
+
+    enabled = playlist_resource()
+    enabled["status"]["podcastStatus"] = "enabled"
+    api.oauth.playlists().update().execute.return_value = enabled
+    current["status"]["podcastStatus"] = "disabled"
+
+    assert playlists.update_playlist("PL1", podcast=True).podcast_status == "enabled"
+    assert api.oauth.playlists().update.call_args.kwargs["body"]["status"] == {
+        "privacyStatus": "public",
+        "podcastStatus": "enabled",
+    }
+
+
+def test_update_playlist_podcast_without_an_image_points_at_the_thumbnail(api):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.side_effect = http_error(400, "badRequest")
+    api.oauth.playlistImages().list().execute.return_value = {"items": []}
+
+    with pytest.raises(InvalidRequest, match=r"playlist thumbnail.*retry in a minute.*API says no"):
+        playlists.update_playlist("PL1", podcast=True)
+    assert api.oauth.playlistImages().list.call_args.kwargs["parent"] == "PL1"
+    with pytest.raises(InvalidRequest, match=r"^API says no"):
+        playlists.update_playlist("PL1", podcast=False)
+
+    api.oauth.playlistImages().list().execute.return_value = {"items": [{"id": "img"}]}
+    with pytest.raises(InvalidRequest, match=r"^API says no"):
+        playlists.update_playlist("PL1", podcast=True)
+
+
+@pytest.mark.parametrize(
+    "error", [http_error(403, "quotaExceeded"), http_error(403, "playlistForbidden"), http_error(500, "backendError")]
+)
+def test_update_playlist_podcast_keeps_errors_that_are_not_about_the_image(api, error):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.side_effect = error
+    api.oauth.playlistImages().list().execute.return_value = {"items": []}
+
+    with pytest.raises(YouTubeError) as raised:
+        playlists.update_playlist("PL1", podcast=True)
+    assert "image" not in str(raised.value)
+
+
+@pytest.mark.parametrize("failure", [http_error(403, "quotaExceeded"), TimeoutError()])
+def test_update_playlist_podcast_keeps_youtubes_error_when_the_image_check_fails(api, failure):
+    api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
+    api.oauth.playlists().update().execute.side_effect = http_error(400, "invalidTitle")
+    api.oauth.playlistImages().list().execute.side_effect = failure
+
+    with pytest.raises(InvalidRequest, match=r"^API says no"):
+        playlists.update_playlist("PL1", podcast=True)
 
 
 def test_remove_from_playlist_removes_every_occurrence(api):
