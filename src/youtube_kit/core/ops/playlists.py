@@ -6,6 +6,7 @@ from googleapiclient.errors import HttpError
 
 from .. import client, guard, parse
 from ..errors import (
+    NETWORK_ERRORS,
     OTHER_CHANNEL_HINT,
     Forbidden,
     InvalidRequest,
@@ -177,7 +178,7 @@ def update_playlist(
 def _has_image(youtube: Any, playlist_id: str) -> bool:
     try:
         return bool(youtube.playlistImages().list(part="id", parent=playlist_id).execute().get("items"))
-    except HttpError:
+    except (HttpError, *NETWORK_ERRORS):
         return True  # can't tell, so keep YouTube's own error
 
 

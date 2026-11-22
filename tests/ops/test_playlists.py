@@ -153,10 +153,11 @@ def test_update_playlist_podcast_keeps_errors_that_are_not_about_the_image(api, 
     assert "image" not in str(raised.value)
 
 
-def test_update_playlist_podcast_keeps_youtubes_error_when_the_image_check_fails(api):
+@pytest.mark.parametrize("failure", [http_error(403, "quotaExceeded"), TimeoutError()])
+def test_update_playlist_podcast_keeps_youtubes_error_when_the_image_check_fails(api, failure):
     api.oauth.playlists().list().execute.return_value = {"items": [playlist_resource()]}
     api.oauth.playlists().update().execute.side_effect = http_error(400, "invalidTitle")
-    api.oauth.playlistImages().list().execute.side_effect = http_error(403, "quotaExceeded")
+    api.oauth.playlistImages().list().execute.side_effect = failure
 
     with pytest.raises(InvalidRequest, match="API says no"):
         playlists.update_playlist("PL1", podcast=True)
