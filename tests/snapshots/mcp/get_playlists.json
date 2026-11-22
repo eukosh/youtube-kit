@@ -6,7 +6,7 @@
     "read_only_hint": true,
     "title": null
   },
-  "description": "Metadata of one or more playlists: title, description, privacy, podcast status, and item count.\n\nQuota: 1 unit.",
+  "description": "Metadata of one or more playlists: title, description, privacy, and item count.\n\nQuota: 1 unit.",
   "input_schema": {
     "additionalProperties": false,
     "properties": {
@@ -98,7 +98,7 @@
                 }
               ],
               "default": null,
-              "description": "enabled, disabled, or unspecified."
+              "description": "enabled, disabled, or unspecified. YouTube returns it only when an update sets privacy or podcast."
             },
             "privacy": {
               "anyOf": [

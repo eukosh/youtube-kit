@@ -119,7 +119,7 @@
                 }
               ],
               "default": null,
-              "description": "enabled, disabled, or unspecified."
+              "description": "enabled, disabled, or unspecified. YouTube returns it only when an update sets privacy or podcast."
             },
             "privacy": {
               "anyOf": [
